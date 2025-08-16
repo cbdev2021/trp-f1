@@ -3,13 +3,15 @@ import { updateStepE, prevStep, generateTour } from '../../store/tourSlice'
 
 export default function StepE() {
   const dispatch = useDispatch()
-  const { stepA, stepB, stepC, stepD, stepE, loading } = useSelector(state => state.tour)
+  const { stepA, stepB, stepC, stepD, stepE, loading, selectedCity, detectedCity } = useSelector(state => state.tour)
+  
+  const targetCity = selectedCity || detectedCity
 
   const ubicacionesComunes = [
-    { nombre: 'Centro de la Ciudad', coordenadas: { lat: -33.4372, lon: -70.6506 } },
-    { nombre: 'Zona Comercial', coordenadas: { lat: -33.4172, lon: -70.5476 } },
-    { nombre: 'Área Residencial', coordenadas: { lat: -33.4264, lon: -70.6106 } },
-    { nombre: 'Zona Turística', coordenadas: { lat: -33.4569, lon: -70.5975 } }
+    { nombre: 'Centro de la Ciudad', coordenadas: { lat: targetCity?.lat || -33.4372, lon: targetCity?.lon || -70.6506 } },
+    { nombre: 'Zona Comercial', coordenadas: { lat: (targetCity?.lat || -33.4372) + 0.02, lon: (targetCity?.lon || -70.6506) + 0.1 } },
+    { nombre: 'Área Residencial', coordenadas: { lat: (targetCity?.lat || -33.4372) + 0.01, lon: (targetCity?.lon || -70.6506) + 0.04 } },
+    { nombre: 'Zona Turística', coordenadas: { lat: (targetCity?.lat || -33.4372) - 0.02, lon: (targetCity?.lon || -70.6506) + 0.03 } }
   ]
 
   const handleUbicacionSelect = (ubicacion) => {
@@ -28,7 +30,9 @@ export default function StepE() {
       ...stepB,
       ...stepC,
       ...stepD,
-      ...stepE
+      ...stepE,
+      selectedCity,
+      detectedCity
     }
     
     dispatch(generateTour(userData))
@@ -36,7 +40,7 @@ export default function StepE() {
 
   return (
     <div className="step-content">
-      <h2>Ubicación de Inicio</h2>
+      <h2>Ubicación de Inicio en {targetCity?.name || 'la ciudad'}</h2>
       
       <div className="form-group">
         <label>Selecciona tu punto de partida:</label>
@@ -65,7 +69,7 @@ export default function StepE() {
             ubicacionInicio: {
               tipo: 'direccion_custom',
               direccion: e.target.value,
-              coordenadas: { lat: -33.4372, lon: -70.6506 } // Default Centro
+              coordenadas: { lat: targetCity?.lat || -33.4372, lon: targetCity?.lon || -70.6506 }
             }
           }))}
         />

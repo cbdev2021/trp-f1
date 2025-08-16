@@ -9,6 +9,36 @@ export const detectCity = createAsyncThunk(
   }
 )
 
+// Async thunk para cargar ciudades cercanas
+export const loadNearbyCities = createAsyncThunk(
+  'tour/loadNearbyCities',
+  async (detectedCity) => {
+    const response = await fetch('/api/nearby-cities', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ detectedCity })
+    })
+    return response.json()
+  }
+)
+
+// Async thunk para cargar más ciudades con IA
+export const loadMoreCities = createAsyncThunk(
+  'tour/loadMoreCities',
+  async (_, { getState }) => {
+    const { nearbyCities, detectedCity } = getState().tour
+    const response = await fetch('/api/more-cities', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        detectedCity,
+        existingCities: nearbyCities.map(c => c.name)
+      })
+    })
+    return response.json()
+  }
+)
+
 // Async thunk para generar tour
 export const generateTour = createAsyncThunk(
   'tour/generate',
@@ -31,6 +61,11 @@ const tourSlice = createSlice({
     // Detección de ciudad
     detectedCity: null,
     cityLoading: false,
+    
+    // Ciudades cercanas y selección
+    nearbyCities: [],
+    selectedCity: null,
+    citiesLoading: false,
     
     // Stepper data (5 pasos según documento)
     stepA: { 
@@ -101,6 +136,9 @@ const tourSlice = createSlice({
         state.rutaGenerada.ruta = state.rutaGenerada.ruta.filter(p => p.orden !== action.payload)
       }
     },
+    selectCity: (state, action) => {
+      state.selectedCity = action.payload
+    },
     resetTour: (state) => {
       return {
         ...state,
@@ -138,6 +176,26 @@ const tourSlice = createSlice({
         state.loading = false
         state.error = action.error.message
       })
+      .addCase(loadNearbyCities.pending, (state) => {
+        state.citiesLoading = true
+      })
+      .addCase(loadNearbyCities.fulfilled, (state, action) => {
+        state.citiesLoading = false
+        state.nearbyCities = action.payload
+      })
+      .addCase(loadNearbyCities.rejected, (state) => {
+        state.citiesLoading = false
+      })
+      .addCase(loadMoreCities.pending, (state) => {
+        state.citiesLoading = true
+      })
+      .addCase(loadMoreCities.fulfilled, (state, action) => {
+        state.citiesLoading = false
+        state.nearbyCities = [...state.nearbyCities, ...action.payload]
+      })
+      .addCase(loadMoreCities.rejected, (state) => {
+        state.citiesLoading = false
+      })
   }
 })
 
@@ -152,6 +210,7 @@ export const {
   aprobarRuta, 
   modificarPunto, 
   eliminarPunto,
+  selectCity,
   resetTour 
 } = tourSlice.actions
 

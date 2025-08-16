@@ -6,6 +6,14 @@ export default async function handler(req, res) {
   try {
     const { userData } = req.body
     
+    // Obtener ciudad objetivo del estado
+    const targetCity = userData.selectedCity || userData.detectedCity || {
+      name: 'Santiago',
+      country: 'Chile', 
+      lat: -33.4372,
+      lon: -70.6506
+    }
+
     // Construir JSON de entrada según documento
     const jsonInput = {
       usuario: {
@@ -16,10 +24,15 @@ export default async function handler(req, res) {
       viaje: {
         inicio: userData.ventanaHoraria?.inicio || "2025-01-15T10:00:00-04:00",
         fin: userData.ventanaHoraria?.fin || "2025-01-15T20:00:00-04:00",
+        ciudad_destino: {
+          nombre: targetCity.name,
+          pais: targetCity.country,
+          coordenadas: { lat: targetCity.lat, lon: targetCity.lon }
+        },
         ubicacion_inicio: userData.ubicacionInicio || {
           tipo: "hotel",
           direccion: "Centro de la Ciudad",
-          coordenadas: { lat: -33.4372, lon: -70.6506 }
+          coordenadas: { lat: targetCity.lat, lon: targetCity.lon }
         },
         transporte: userData.transporte || "caminata",
         temporada: "verano",
@@ -37,7 +50,7 @@ export default async function handler(req, res) {
     
 Datos del usuario: ${JSON.stringify(jsonInput)}
 
-Genera una ruta turística optimizada para la ciudad especificada. RESPONDE ÚNICAMENTE en este formato JSON válido:
+Genera una ruta turística optimizada para ${targetCity.name}, ${targetCity.country}. RESPONDE ÚNICAMENTE en este formato JSON válido:
 {
   "ruta": [
     {

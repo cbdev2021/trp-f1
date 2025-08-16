@@ -22,7 +22,7 @@ export default function Home() {
   }, [detectedCity, cityLoading])
 
   const handleContinue = () => {
-    router.push('/tour-planner')
+    router.push('/city-selector')
   }
 
   const getCityMessage = () => {

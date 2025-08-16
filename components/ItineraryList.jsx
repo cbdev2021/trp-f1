@@ -2,8 +2,10 @@ import { useSelector, useDispatch } from 'react-redux'
 import { aprobarRuta, resetTour } from '../store/tourSlice'
 
 export default function ItineraryList() {
-  const { rutaGenerada, rutaAprobada } = useSelector(state => state.tour)
+  const { rutaGenerada, rutaAprobada, selectedCity, detectedCity } = useSelector(state => state.tour)
   const dispatch = useDispatch()
+  
+  const targetCity = selectedCity || detectedCity
 
   if (!rutaGenerada) return null
 
@@ -93,7 +95,7 @@ export default function ItineraryList() {
 
       {rutaAprobada && (
         <div className="feedback-section">
-          <p>🎯 ¡Ruta aprobada! Disfruta tu recorrido por Santiago</p>
+          <p>🎯 ¡Ruta aprobada! Disfruta tu recorrido por {targetCity?.name || 'la ciudad'}</p>
         </div>
       )}
     </div>
