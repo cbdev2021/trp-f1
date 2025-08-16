@@ -48,16 +48,36 @@ const interesesDetallados = [
 
 export default function TripPlannerFlow() {
   const [activeStep, setActiveStep] = useState(0)
-  const [formData, setFormData] = useState({
-    perfil: '',
-    presupuesto: '',
-    horaInicio: '10:00',
-    horaFin: '20:00',
-    motivos: [],
-    restricciones: [],
-    transporte: '',
-    intereses: []
-  })
+  // const [formData, setFormData] = useState({
+  //   perfil: '',
+  //   presupuesto: '',
+  //   horaInicio: '10:00',
+  //   horaFin: '20:00',
+  //   motivos: [],
+  //   restricciones: [],
+  //   transporte: '',
+  //   intereses: []
+  // })
+
+  const [formData, setFormData] = useState<{
+  perfil: string;
+  presupuesto: string;
+  horaInicio: string;
+  horaFin: string;
+  motivos: string[];
+  restricciones: string[];
+  transporte: string;
+  intereses: string[];
+}>({
+  perfil: '',
+  presupuesto: '',
+  horaInicio: '10:00',
+  horaFin: '20:00',
+  motivos: [],
+  restricciones: [],
+  transporte: '',
+  intereses: []
+});
 
   const handleNext = () => setActiveStep(prev => prev + 1)
   const handleBack = () => setActiveStep(prev => prev - 1)
