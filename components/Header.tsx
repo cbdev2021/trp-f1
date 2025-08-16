@@ -6,7 +6,7 @@ export default function Header() {
     <AppBar position="static">
       <Toolbar>
         <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-          Trip F1 - Planificador de Viajes
+          Trp - Planificador de Viajes
         </Typography>
         <Box>
           <Button color="inherit" component={Link} href="/">

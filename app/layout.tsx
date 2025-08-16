@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Trip F1 - Planificador de Viajes',
+  title: 'Trp - Planificador de Viajes',
   description: 'Planificador inteligente de rutas de viaje personalizadas',
 }
 
