@@ -4,37 +4,41 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { ip } = req.query
-    
-    // Obtener IP del cliente si no se proporciona
-    const clientIp = ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress || '8.8.8.8'
-    
-    const response = await fetch(`https://api.ipgeolocation.io/timezone?apiKey=89fd5522156e4e39ad2a4ac9656f3921&ip=${clientIp}`)
-    const data = await response.json()
-    
-    // Mapear ciudades conocidas
-    const cityMap = {
-      'Santiago': 'Santiago',
-      'Buenos Aires': 'Buenos Aires', 
-      'Lima': 'Lima',
-      'Bogotá': 'Bogotá',
-      'Mexico City': 'Ciudad de México',
-      'São Paulo': 'São Paulo'
+    const forwarded = req.headers['x-forwarded-for']
+    const ip = forwarded ? forwarded.split(',')[0] : req.connection.remoteAddress
+
+    let targetIp = ip
+    if (ip === '127.0.0.1' || ip === '::1' || ip?.startsWith('192.168.')) {
+      const ipResponse = await fetch('https://api.ipify.org?format=json')
+      const { ip: publicIp } = await ipResponse.json()
+      targetIp = publicIp
     }
+
+    const geoResponse = await fetch(`http://ip-api.com/json/${targetIp}`)
+    const geoData = await geoResponse.json()
     
-    const detectedCity = cityMap[data.geo?.city] || data.geo?.city || 'Santiago'
-    
-    res.status(200).json({
-      city: detectedCity,
-      country: data.geo?.country || 'Chile',
-      timezone: data.timezone
-    })
-  } catch (error) {
-    // Fallback a Santiago si hay error
-    res.status(200).json({
+    if (geoData.status === 'success') {
+      return res.status(200).json({
+        city: geoData.city,
+        country: geoData.country,
+        lat: geoData.lat,
+        lon: geoData.lon
+      })
+    }
+
+    return res.status(200).json({
       city: 'Santiago',
-      country: 'Chile', 
-      timezone: 'America/Santiago'
+      country: 'Chile',
+      lat: -33.4372,
+      lon: -70.6506
+    })
+
+  } catch (error) {
+    return res.status(200).json({
+      city: 'Santiago',
+      country: 'Chile',
+      lat: -33.4372,
+      lon: -70.6506
     })
   }
 }

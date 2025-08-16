@@ -3,7 +3,7 @@ import { updateStepA, nextStep } from '../../store/tourSlice'
 
 export default function StepA() {
   const dispatch = useDispatch()
-  const { stepA } = useSelector(state => state.tour)
+  const { stepA, detectedCity } = useSelector(state => state.tour)
 
   const demografiaOptions = [
     'solo', 'pareja', 'familia', 'adulto_mayor', 'grupo_amigos'
@@ -22,6 +22,11 @@ export default function StepA() {
   return (
     <div className="step-content">
       <h2>Datos Básicos del Viaje</h2>
+      {detectedCity && (
+        <div className="city-message">
+          <p>🌍 Hemos detectado que te encuentras en <strong>{detectedCity.city}, {detectedCity.country}</strong>. Puedes crear tu recorrido aquí o en cualquier ciudad del mundo que desees explorar.</p>
+        </div>
+      )}
       
       <div className="form-group">
         <label>Tipo de viajero:</label>
