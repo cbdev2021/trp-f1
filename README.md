@@ -1,6 +1,6 @@
-# Santiago Tour Planner
+# Tour Planner
 
-Aplicación web para crear recorridos turísticos personalizados por Santiago de Chile usando IA.
+Aplicación web para crear recorridos turísticos personalizados por cualquier ciudad del mundo usando IA.
 
 ## Características
 

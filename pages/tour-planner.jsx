@@ -9,8 +9,8 @@ export default function TourPlanner() {
   return (
     <div className="tour-planner">
       <header className="tour-header">
-        <h1>🏛️ Santiago Tour Planner</h1>
-        <p>Crea tu recorrido personalizado por Santiago de Chile</p>
+        <h1>🌍 Tour Planner</h1>
+        <p>Crea tu recorrido personalizado por cualquier ciudad del mundo</p>
       </header>
 
       {/* Mostrar stepper si no hemos terminado */}

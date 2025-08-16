@@ -18,7 +18,7 @@ export default async function handler(req, res) {
         fin: userData.ventanaHoraria?.fin || "2025-01-15T20:00:00-04:00",
         ubicacion_inicio: userData.ubicacionInicio || {
           tipo: "hotel",
-          direccion: "Santiago Centro, Chile",
+          direccion: "Centro de la Ciudad",
           coordenadas: { lat: -33.4372, lon: -70.6506 }
         },
         transporte: userData.transporte || "caminata",
@@ -33,37 +33,37 @@ export default async function handler(req, res) {
       }
     }
 
-    const prompt = `Eres un agente experto en turismo de Santiago, Chile. 
+    const prompt = `Eres un agente experto en turismo global. 
     
 Datos del usuario: ${JSON.stringify(jsonInput)}
 
-Genera una ruta turística optimizada para Santiago. RESPONDE ÚNICAMENTE en este formato JSON válido:
+Genera una ruta turística optimizada para la ciudad especificada. RESPONDE ÚNICAMENTE en este formato JSON válido:
 {
   "ruta": [
     {
       "orden": 1,
-      "nombre": "Plaza de Armas",
+      "nombre": "Plaza Principal",
       "tipo": "cultural",
       "duracion_min": 45,
       "coordenadas": {"lat": -33.4378, "lon": -70.6505},
-      "descripcion": "Centro histórico de Santiago con la Catedral Metropolitana",
+      "descripcion": "Centro histórico de la ciudad",
       "costo_estimado": "$0"
     },
     {
       "orden": 2,
-      "nombre": "Cerro Santa Lucía",
+      "nombre": "Mirador Principal",
       "tipo": "naturaleza",
       "duracion_min": 90,
       "coordenadas": {"lat": -33.4373, "lon": -70.6366},
-      "descripcion": "Mirador con vista panorámica de Santiago",
+      "descripcion": "Mirador con vista panorámica de la ciudad",
       "costo_estimado": "$3.000"
     }
   ],
   "tiempo_total_min": 480,
   "transporte_total_min": 60,
   "sugerencias_alternativas": [
-    {"nombre": "Museo de Arte Precolombino", "tipo": "cultura"},
-    {"nombre": "Mercado Central", "tipo": "gastronomia"}
+    {"nombre": "Museo Principal", "tipo": "cultura"},
+    {"nombre": "Mercado Local", "tipo": "gastronomia"}
   ],
   "recomendaciones_clima": "Llevar protector solar y agua"
 }`
@@ -89,16 +89,16 @@ Genera una ruta turística optimizada para Santiago. RESPONDE ÚNICAMENTE en est
         ruta: [
           {
             orden: 1,
-            nombre: "Plaza de Armas",
+            nombre: "Plaza Principal",
             tipo: "cultural",
             duracion_min: 45,
             coordenadas: { lat: -33.4378, lon: -70.6505 },
-            descripcion: "Centro histórico de Santiago",
+            descripcion: "Centro histórico de la ciudad",
             costo_estimado: "$0"
           },
           {
             orden: 2,
-            nombre: "Cerro Santa Lucía",
+            nombre: "Mirador Principal",
             tipo: "naturaleza", 
             duracion_min: 90,
             coordenadas: { lat: -33.4373, lon: -70.6366 },

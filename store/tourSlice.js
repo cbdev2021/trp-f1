@@ -1,5 +1,14 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 
+// Async thunk para detectar ciudad
+export const detectCity = createAsyncThunk(
+  'tour/detectCity',
+  async () => {
+    const response = await fetch('/api/detect-city')
+    return response.json()
+  }
+)
+
 // Async thunk para generar tour
 export const generateTour = createAsyncThunk(
   'tour/generate',
@@ -19,6 +28,10 @@ export const generateTour = createAsyncThunk(
 const tourSlice = createSlice({
   name: 'tour',
   initialState: {
+    // Detección de ciudad
+    detectedCity: null,
+    cityLoading: false,
+    
     // Stepper data (5 pasos según documento)
     stepA: { 
       demografia: '', 
@@ -101,6 +114,17 @@ const tourSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+      .addCase(detectCity.pending, (state) => {
+        state.cityLoading = true
+      })
+      .addCase(detectCity.fulfilled, (state, action) => {
+        state.cityLoading = false
+        state.detectedCity = action.payload
+      })
+      .addCase(detectCity.rejected, (state) => {
+        state.cityLoading = false
+        state.detectedCity = { city: 'Santiago', country: 'Chile' }
+      })
       .addCase(generateTour.pending, (state) => {
         state.loading = true
         state.error = null
