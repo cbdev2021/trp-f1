@@ -1,9 +1,11 @@
 import { useSelector, useDispatch } from 'react-redux'
+import { useRouter } from 'next/router'
 import { aprobarRuta, resetTour } from '../store/tourSlice'
 
 export default function ItineraryList() {
   const { rutaGenerada, rutaAprobada, selectedCity, detectedCity } = useSelector(state => state.tour)
   const dispatch = useDispatch()
+  const router = useRouter()
   
   const targetCity = selectedCity || detectedCity
 
@@ -15,6 +17,7 @@ export default function ItineraryList() {
 
   const handleNewTour = () => {
     dispatch(resetTour())
+    router.push('/')
   }
 
   return (

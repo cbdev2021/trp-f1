@@ -10,10 +10,13 @@ export default function CitySelector() {
   const [currentIndex, setCurrentIndex] = useState(0)
 
   useEffect(() => {
-    if (detectedCity) {
-      dispatch(loadNearbyCities(detectedCity))
+    if (!detectedCity) {
+      // Si no hay ciudad detectada, redirigir al inicio
+      router.push('/')
+      return
     }
-  }, [detectedCity, dispatch])
+    dispatch(loadNearbyCities(detectedCity))
+  }, [detectedCity, dispatch, router])
 
   const handleCitySelect = (city) => {
     dispatch(selectCity(city))
@@ -38,7 +41,20 @@ export default function CitySelector() {
     setCurrentIndex((prev) => prev === 0 ? Math.max(0, nearbyCities.length - 4) : prev - 1)
   }
 
-  if (!detectedCity) return <div>Cargando...</div>
+  if (!detectedCity) {
+    return (
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100vh',
+        flexDirection: 'column'
+      }}>
+        <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>🔄</div>
+        <p>Redirigiendo...</p>
+      </div>
+    )
+  }
 
   return (
     <div className="city-selector">
