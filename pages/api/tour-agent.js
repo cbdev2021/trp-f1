@@ -26,6 +26,11 @@ export default async function handler(req, res) {
 
     const duracionDisponible = calculateDuration(userData.ventanaHoraria?.inicio, userData.ventanaHoraria?.fin)
 
+    // Calcular días de viaje
+    const fechaInicio = new Date(userData.fechaInicio)
+    const fechaFin = new Date(userData.fechaFin)
+    const diasViaje = Math.ceil((fechaFin - fechaInicio) / (1000 * 60 * 60 * 24)) + 1
+    
     // Construir JSON de entrada según documento
     const jsonInput = {
       usuario: {
@@ -34,10 +39,14 @@ export default async function handler(req, res) {
         movil_reducida: userData.restricciones?.includes('movilidad') || false
       },
       viaje: {
-        inicio: userData.ventanaHoraria?.inicio || "10:00",
-        fin: userData.ventanaHoraria?.fin || "18:00",
-        duracion_disponible_min: duracionDisponible,
-        ciudad_destino: {
+        tipo_ruta: userData.tipoRuta,
+        fecha_inicio: userData.fechaInicio,
+        fecha_fin: userData.fechaFin,
+        dias_total: diasViaje,
+        hora_inicio: userData.ventanaHoraria?.inicio || "10:00",
+        hora_fin: userData.ventanaHoraria?.fin || "18:00",
+        duracion_diaria_min: duracionDisponible,
+        ciudad_principal: {
           nombre: targetCity.name,
           pais: targetCity.country,
           coordenadas: { lat: targetCity.lat, lon: targetCity.lon }
@@ -63,41 +72,79 @@ export default async function handler(req, res) {
     
 Datos del usuario: ${JSON.stringify(jsonInput)}
 
-IMPORTANTE: El usuario tiene EXACTAMENTE ${duracionDisponible} minutos disponibles (${Math.floor(duracionDisponible/60)}h ${duracionDisponible%60}m). 
-Debes generar SOLO los puntos que caben en este tiempo, considerando:
-- Cada punto necesita su tiempo de visita (duracion_min)
-- Agregar tiempo de transporte entre puntos
-- El tiempo total NO debe exceder ${duracionDisponible} minutos
-- Mínimo 30 min por punto, máximo 120 min por punto
-- Reservar 15-30 min de transporte entre puntos
+IMPORTANTE: 
+- Tipo de ruta: ${userData.tipoRuta}
+- Duración: ${diasViaje} días (${userData.fechaInicio} a ${userData.fechaFin})
+- Horario diario: ${userData.ventanaHoraria?.inicio || '10:00'} a ${userData.ventanaHoraria?.fin || '18:00'}
+- Tiempo diario disponible: ${duracionDisponible} minutos
 
-Genera una ruta turística optimizada para ${targetCity.name}, ${targetCity.country}. RESPONDE ÚNICAMENTE en este formato JSON válido:
+RESTRICCIONES POR TIPO DE RUTA:
+${userData.tipoRuta === 'ciudad_local' ? 
+  `CIUDAD LOCAL:
+  - Solo lugares en ${targetCity.name}
+  - Ruta optimizada sin alojamiento
+  - Presupuesto: transporte local + comidas + entradas` :
+  `MULTI-CIUDADES:
+  - Incluir ciudades cercanas (máx 3h de ${targetCity.name})
+  - Calcular alojamiento por noche
+  - Transporte inter-ciudades
+  - Presupuesto completo: hotel + transporte + comidas + entradas`
+}
+
+RESTRICCIONES DE TIEMPO:
+- Cada punto: 30-120 min de visita
+- Transporte entre puntos: 15-30 min
+- Ruta LINEAL sin devolverse
+- Partir desde: ${userData.ubicacionInicio?.direccion || 'centro de la ciudad'}
+
+Genera una ruta turística ${userData.tipoRuta === 'multi_ciudades' ? 'multi-ciudades' : 'local'} optimizada. RESPONDE ÚNICAMENTE en este formato JSON válido:
 {
-  "ruta": [
+  "tipo_tour": "${userData.tipoRuta}",
+  "duracion_dias": ${diasViaje},
+  "fecha_inicio": "${userData.fechaInicio}",
+  "fecha_fin": "${userData.fechaFin}",
+  ${userData.tipoRuta === 'ciudad_local' ? 
+    `"ruta": [
     {
       "orden": 1,
       "nombre": "Plaza Principal",
       "tipo": "cultural",
       "duracion_min": 45,
       "coordenadas": {"lat": -33.4378, "lon": -70.6505},
-      "descripcion": "Centro histórico de la ciudad",
+      "descripcion": "Centro histórico",
       "costo_estimado": "$0"
-    },
-    {
-      "orden": 2,
-      "nombre": "Mirador Principal",
-      "tipo": "naturaleza",
-      "duracion_min": 90,
-      "coordenadas": {"lat": -33.4373, "lon": -70.6366},
-      "descripcion": "Mirador con vista panorámica de la ciudad",
-      "costo_estimado": "$3.000"
     }
   ],
-  "tiempo_total_min": 480,
+  "tiempo_total_min": ${duracionDisponible},
   "transporte_total_min": 60,
+  "costo_total_estimado": "$25.000"` :
+    `"dias": [
+    {
+      "dia": 1,
+      "fecha": "${userData.fechaInicio}",
+      "ciudad": "${targetCity.name}",
+      "ruta": [
+        {
+          "orden": 1,
+          "nombre": "Plaza Principal",
+          "tipo": "cultural",
+          "duracion_min": 45,
+          "coordenadas": {"lat": -33.4378, "lon": -70.6505},
+          "descripcion": "Centro histórico",
+          "costo_estimado": "$0"
+        }
+      ],
+      "alojamiento": "Hotel Centro - $35.000/noche",
+      "costo_dia": "$45.000"
+    }
+  ],
+  "transporte_inter_ciudades": [
+    {"origen": "${targetCity.name}", "destino": "Ciudad Cercana", "medio": "Bus", "duracion": "2h", "costo": "$5.000"}
+  ],
+  "costo_total_estimado": "$135.000"`
+  },
   "sugerencias_alternativas": [
-    {"nombre": "Museo Principal", "tipo": "cultura"},
-    {"nombre": "Mercado Local", "tipo": "gastronomia"}
+    {"nombre": "Museo Principal", "tipo": "cultura"}
   ],
   "recomendaciones_clima": "Llevar protector solar y agua"
 }`
@@ -118,39 +165,61 @@ Genera una ruta turística optimizada para ${targetCity.name}, ${targetCity.coun
     try {
       structuredOutput = JSON.parse(data.output)
     } catch (parseError) {
-      // Fallback si el agente no retorna JSON válido - respeta duración disponible
-      const puntosBasicos = [
-        {
-          orden: 1,
-          nombre: "Plaza Principal",
-          tipo: "cultural",
-          duracion_min: 60,
-          coordenadas: { lat: targetCity.lat, lon: targetCity.lon },
-          descripcion: "Centro histórico de la ciudad",
-          costo_estimado: "$0"
+      // Fallback según tipo de ruta
+      if (userData.tipoRuta === 'ciudad_local') {
+        structuredOutput = {
+          tipo_tour: 'ciudad_local',
+          duracion_dias: diasViaje,
+          fecha_inicio: userData.fechaInicio,
+          fecha_fin: userData.fechaFin,
+          ruta: [
+            {
+              orden: 1,
+              nombre: "Plaza Principal",
+              tipo: "cultural",
+              duracion_min: 60,
+              coordenadas: { lat: targetCity.lat, lon: targetCity.lon },
+              descripcion: "Centro histórico",
+              costo_estimado: "$0"
+            }
+          ],
+          tiempo_total_min: duracionDisponible,
+          transporte_total_min: 30,
+          costo_total_estimado: "$25.000",
+          sugerencias_alternativas: [],
+          recomendaciones_clima: "Llevar protector solar"
         }
-      ]
-      
-      // Agregar segundo punto solo si hay tiempo suficiente (120+ min)
-      if (duracionDisponible >= 150) {
-        puntosBasicos.push({
-          orden: 2,
-          nombre: "Mirador Principal",
-          tipo: "naturaleza", 
-          duracion_min: Math.min(90, duracionDisponible - 90),
-          coordenadas: { lat: targetCity.lat + 0.01, lon: targetCity.lon + 0.01 },
-          descripcion: "Vista panorámica de la ciudad",
-          costo_estimado: "$3.000"
-        })
-      }
-      
-      structuredOutput = {
-        ruta: puntosBasicos,
-        tiempo_total_min: Math.min(duracionDisponible, puntosBasicos.reduce((acc, p) => acc + p.duracion_min, 0) + 30),
-        transporte_total_min: 30,
-        sugerencias_alternativas: [],
-        recomendaciones_clima: "Llevar protector solar",
-        mensaje_original: data.output
+      } else {
+        structuredOutput = {
+          tipo_tour: 'multi_ciudades',
+          duracion_dias: diasViaje,
+          fecha_inicio: userData.fechaInicio,
+          fecha_fin: userData.fechaFin,
+          dias: [
+            {
+              dia: 1,
+              fecha: userData.fechaInicio,
+              ciudad: targetCity.name,
+              ruta: [
+                {
+                  orden: 1,
+                  nombre: "Plaza Principal",
+                  tipo: "cultural",
+                  duracion_min: 60,
+                  coordenadas: { lat: targetCity.lat, lon: targetCity.lon },
+                  descripcion: "Centro histórico",
+                  costo_estimado: "$0"
+                }
+              ],
+              alojamiento: "Hotel Centro - $35.000/noche",
+              costo_dia: "$45.000"
+            }
+          ],
+          transporte_inter_ciudades: [],
+          costo_total_estimado: "$135.000",
+          sugerencias_alternativas: [],
+          recomendaciones_clima: "Llevar protector solar"
+        }
       }
     }
 

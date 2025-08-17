@@ -39,6 +39,19 @@ export const loadMoreCities = createAsyncThunk(
   }
 )
 
+// Async thunk para cargar puntos referenciales
+export const loadReferencePoints = createAsyncThunk(
+  'tour/loadReferencePoints',
+  async ({ city, userPreferences }) => {
+    const response = await fetch('/api/reference-points', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ city, userPreferences })
+    })
+    return response.json()
+  }
+)
+
 // Async thunk para generar tour
 export const generateTour = createAsyncThunk(
   'tour/generate',
@@ -67,11 +80,18 @@ const tourSlice = createSlice({
     selectedCity: null,
     citiesLoading: false,
     
+    // Puntos referenciales
+    referencePoints: [],
+    referencePointsLoading: false,
+    
     // Stepper data (5 pasos según documento)
     stepA: { 
       demografia: '', 
       presupuesto: '', 
-      ventanaHoraria: { inicio: '', fin: '' } 
+      ventanaHoraria: { inicio: '', fin: '' },
+      tipoRuta: '',
+      fechaInicio: '',
+      fechaFin: ''
     },
     stepB: { 
       motivos: [], 
@@ -142,6 +162,14 @@ const tourSlice = createSlice({
     resetTour: (state) => {
       return {
         ...state,
+        stepA: { 
+          demografia: '', 
+          presupuesto: '', 
+          ventanaHoraria: { inicio: '', fin: '' },
+          tipoRuta: '',
+          fechaInicio: '',
+          fechaFin: ''
+        },
         currentStep: 1,
         rutaGenerada: null,
         rutaAprobada: false,
@@ -195,6 +223,23 @@ const tourSlice = createSlice({
       })
       .addCase(loadMoreCities.rejected, (state) => {
         state.citiesLoading = false
+      })
+      .addCase(loadReferencePoints.pending, (state) => {
+        state.referencePointsLoading = true
+      })
+      .addCase(loadReferencePoints.fulfilled, (state, action) => {
+        state.referencePointsLoading = false
+        const newPoints = action.payload.puntos || []
+        // Si hay puntos existentes, agregar los nuevos, sino reemplazar
+        if (state.referencePoints.length > 0) {
+          state.referencePoints = [...state.referencePoints, ...newPoints]
+        } else {
+          state.referencePoints = newPoints
+        }
+      })
+      .addCase(loadReferencePoints.rejected, (state) => {
+        state.referencePointsLoading = false
+        state.referencePoints = []
       })
   }
 })

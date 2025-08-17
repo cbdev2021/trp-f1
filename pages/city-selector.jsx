@@ -62,12 +62,13 @@ export default function CitySelector() {
         <h2>📍 {selectedCity ? `Destino seleccionado: ${selectedCity.name}, ${selectedCity.country}` : `Tu ubicación: ${detectedCity.city}, ${detectedCity.country}`}</h2>
         <div className="map-container">
           <iframe
-            key={getMapCity().name}
-            src={`https://www.openstreetmap.org/export/embed.html?bbox=${getMapCity().lon-0.1},${getMapCity().lat-0.1},${getMapCity().lon+0.1},${getMapCity().lat+0.1}&layer=mapnik&marker=${getMapCity().lat},${getMapCity().lon}`}
+            key={`${getMapCity().lat}-${getMapCity().lon}`}
+            src={`https://maps.google.com/maps?q=${getMapCity().lat},${getMapCity().lon}&hl=es&z=12&output=embed`}
             width="100%"
             height="300"
-            frameBorder="0"
-            style={{ borderRadius: '12px' }}
+            style={{ border: 'none', borderRadius: '12px' }}
+            title={`Mapa de ${getMapCity().name}`}
+            allowFullScreen
           />
         </div>
       </div>

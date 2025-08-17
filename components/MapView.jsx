@@ -6,29 +6,46 @@ export default function MapView() {
   const dispatch = useDispatch()
 
   if (!rutaGenerada) return null
+  
+  const isMultiCiudades = rutaGenerada.tipo_tour === 'multi_ciudades'
+  
+  // Obtener todos los puntos según el tipo de tour
+  const getAllPoints = () => {
+    if (isMultiCiudades && rutaGenerada.dias) {
+      return rutaGenerada.dias.flatMap(dia => 
+        dia.ruta?.map(punto => ({ ...punto, dia: dia.dia, ciudad: dia.ciudad })) || []
+      )
+    }
+    return rutaGenerada.ruta || []
+  }
+  
+  const allPoints = getAllPoints()
 
   return (
     <div className="map-view">
       <h3>Mapa del Recorrido</h3>
       
-      {/* Placeholder para mapa - aquí integrarías Google Maps o Leaflet */}
       <div className="map-placeholder">
         <div className="map-info">
           📍 Mapa Interactivo
           <p>Aquí se mostraría el mapa con todos los puntos del recorrido</p>
+          {isMultiCiudades && (
+            <p>🌍 Tour de {rutaGenerada.duracion_dias} días</p>
+          )}
         </div>
         
         <div className="map-points">
-          {rutaGenerada.ruta.map(punto => (
-            <div key={punto.orden} className="map-point">
+          {allPoints.map((punto, index) => (
+            <div key={`${punto.dia || 1}-${punto.orden}`} className="map-point">
               <div className="point-marker">
                 <span className="point-number">{punto.orden}</span>
               </div>
               <div className="point-info">
                 <h4>{punto.nombre}</h4>
+                {punto.dia && <p className="point-day">Día {punto.dia} - {punto.ciudad}</p>}
                 <p className="point-type">{punto.tipo}</p>
                 <p className="point-coords">
-                  Lat: {punto.coordenadas.lat}, Lon: {punto.coordenadas.lon}
+                  Lat: {punto.coordenadas?.lat}, Lon: {punto.coordenadas?.lon}
                 </p>
                 <button 
                   onClick={() => dispatch(eliminarPunto(punto.orden))}
@@ -44,13 +61,13 @@ export default function MapView() {
 
       <div className="map-summary">
         <div className="summary-item">
-          <span>⏱️ Tiempo total: {rutaGenerada.tiempo_total_min} min</span>
+          <span>📅 {isMultiCiudades ? `${rutaGenerada.duracion_dias} días` : 'Tour de 1 día'}</span>
         </div>
         <div className="summary-item">
-          <span>🚶 Transporte: {rutaGenerada.transporte_total_min} min</span>
+          <span>💰 Costo: {rutaGenerada.costo_total_estimado || 'No disponible'}</span>
         </div>
         <div className="summary-item">
-          <span>🌤️ {rutaGenerada.recomendaciones_clima}</span>
+          <span>🌤️ {rutaGenerada.recomendaciones_clima || 'Buen clima'}</span>
         </div>
       </div>
     </div>

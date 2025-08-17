@@ -12,6 +12,11 @@ export default function StepA() {
   const presupuestoOptions = [
     'economico', 'medio', 'alto', 'premium'
   ]
+  
+  const tipoRutaOptions = [
+    { value: 'ciudad_local', label: 'Solo en esta ciudad' },
+    { value: 'multi_ciudades', label: 'Incluir ciudades cercanas' }
+  ]
 
   const calculateDuration = () => {
     if (!stepA.ventanaHoraria.inicio || !stepA.ventanaHoraria.fin) return 0
@@ -26,7 +31,10 @@ export default function StepA() {
   const isValidDuration = duration >= 120 // Mínimo 2 horas
 
   const handleNext = () => {
-    if (stepA.demografia && stepA.presupuesto && stepA.ventanaHoraria.inicio && stepA.ventanaHoraria.fin && isValidDuration) {
+    const requiredFields = stepA.demografia && stepA.presupuesto && 
+                          stepA.ventanaHoraria.inicio && stepA.ventanaHoraria.fin && 
+                          stepA.fechaInicio && stepA.fechaFin && stepA.tipoRuta && isValidDuration
+    if (requiredFields) {
       dispatch(nextStep())
     }
   }
@@ -91,6 +99,41 @@ export default function StepA() {
           }))}
         />
       </div>
+      
+      <div className="form-group">
+        <label>Tipo de ruta:</label>
+        <select 
+          value={stepA.tipoRuta || ''} 
+          onChange={(e) => dispatch(updateStepA({ tipoRuta: e.target.value }))}
+        >
+          <option value="">Selecciona...</option>
+          {tipoRutaOptions.map(option => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </div>
+      
+      <div className="form-group">
+        <label>Fecha de inicio:</label>
+        <input
+          type="date"
+          value={stepA.fechaInicio || ''}
+          min={new Date().toISOString().split('T')[0]}
+          onChange={(e) => dispatch(updateStepA({ fechaInicio: e.target.value }))}
+        />
+      </div>
+      
+      <div className="form-group">
+        <label>Fecha de término:</label>
+        <input
+          type="date"
+          value={stepA.fechaFin || ''}
+          min={stepA.fechaInicio || new Date().toISOString().split('T')[0]}
+          onChange={(e) => dispatch(updateStepA({ fechaFin: e.target.value }))}
+        />
+      </div>
 
       {duration > 0 && duration < 120 && (
         <div className="warning-message">
@@ -100,7 +143,7 @@ export default function StepA() {
 
       <button 
         onClick={handleNext}
-        disabled={!stepA.demografia || !stepA.presupuesto || !stepA.ventanaHoraria.inicio || !stepA.ventanaHoraria.fin || !isValidDuration}
+        disabled={!stepA.demografia || !stepA.presupuesto || !stepA.ventanaHoraria.inicio || !stepA.ventanaHoraria.fin || !stepA.fechaInicio || !stepA.fechaFin || !stepA.tipoRuta || !isValidDuration}
         className="next-btn"
       >
         Siguiente
