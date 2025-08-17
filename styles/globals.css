@@ -540,6 +540,116 @@ body {
   font-weight: 500;
 }
 
+.warning-message {
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 20px;
+  color: #856404;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+/* Transport Info Styles */
+.transport-info {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 20px;
+  margin-top: 20px;
+}
+
+.transport-info h4 {
+  margin-bottom: 15px;
+  color: #2c3e50;
+}
+
+.transport-details {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.transport-icon {
+  font-size: 2rem;
+}
+
+.transport-text strong {
+  color: #2c3e50;
+  display: block;
+  margin-bottom: 5px;
+}
+
+.transport-text p {
+  margin: 0;
+  color: #555;
+  font-size: 0.9rem;
+}
+
+/* Enhanced Route Summary */
+.route-summary {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 25px;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 20px;
+  margin-bottom: 15px;
+}
+
+.summary-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+}
+
+.summary-icon {
+  font-size: 1.5rem;
+}
+
+.summary-text strong {
+  display: block;
+  color: #2c3e50;
+  font-size: 1.1rem;
+}
+
+.summary-text small {
+  color: #7f8c8d;
+  font-size: 0.8rem;
+}
+
+.time-breakdown {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 15px;
+  background: white;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  flex-wrap: wrap;
+}
+
+.breakdown-item {
+  color: #555;
+}
+
+.breakdown-separator {
+  color: #bdc3c7;
+  font-weight: bold;
+}
+
+.breakdown-total {
+  color: #2c3e50;
+  font-weight: bold;
+}
+
 /* City Selector Styles */
 .city-selector {
   max-width: 1200px;
@@ -734,5 +844,19 @@ body {
   
   .itinerary-actions {
     flex-direction: column;
+  }
+  
+  .summary-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .time-breakdown {
+    font-size: 0.8rem;
+  }
+  
+  .transport-details {
+    flex-direction: column;
+    text-align: center;
+    gap: 10px;
   }
 }

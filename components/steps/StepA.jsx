@@ -13,8 +13,20 @@ export default function StepA() {
     'economico', 'medio', 'alto', 'premium'
   ]
 
+  const calculateDuration = () => {
+    if (!stepA.ventanaHoraria.inicio || !stepA.ventanaHoraria.fin) return 0
+    const [startH, startM] = stepA.ventanaHoraria.inicio.split(':').map(Number)
+    const [endH, endM] = stepA.ventanaHoraria.fin.split(':').map(Number)
+    const startMinutes = startH * 60 + startM
+    const endMinutes = endH * 60 + endM
+    return endMinutes - startMinutes
+  }
+
+  const duration = calculateDuration()
+  const isValidDuration = duration >= 120 // Mínimo 2 horas
+
   const handleNext = () => {
-    if (stepA.demografia && stepA.presupuesto && stepA.ventanaHoraria.inicio && stepA.ventanaHoraria.fin) {
+    if (stepA.demografia && stepA.presupuesto && stepA.ventanaHoraria.inicio && stepA.ventanaHoraria.fin && isValidDuration) {
       dispatch(nextStep())
     }
   }
@@ -80,9 +92,15 @@ export default function StepA() {
         />
       </div>
 
+      {duration > 0 && duration < 120 && (
+        <div className="warning-message">
+          ⚠️ Se requiere mínimo 2 horas para generar una ruta (actual: {Math.floor(duration/60)}h {duration%60}m)
+        </div>
+      )}
+
       <button 
         onClick={handleNext}
-        disabled={!stepA.demografia || !stepA.presupuesto || !stepA.ventanaHoraria.inicio || !stepA.ventanaHoraria.fin}
+        disabled={!stepA.demografia || !stepA.presupuesto || !stepA.ventanaHoraria.inicio || !stepA.ventanaHoraria.fin || !isValidDuration}
         className="next-btn"
       >
         Siguiente

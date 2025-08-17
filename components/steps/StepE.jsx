@@ -6,6 +6,19 @@ export default function StepE() {
   const { stepA, stepB, stepC, stepD, stepE, loading, selectedCity, detectedCity } = useSelector(state => state.tour)
   
   const targetCity = selectedCity || detectedCity
+  
+  const getTransportInfo = (transporte) => {
+    const transporteInfo = {
+      caminata: { icon: '🚶', tiempo: '5-15 min', descripcion: 'entre puntos cercanos' },
+      bicicleta: { icon: '🚴', tiempo: '3-10 min', descripcion: 'entre puntos' },
+      transporte_publico: { icon: '🚌', tiempo: '10-25 min', descripcion: 'incluyendo esperas' },
+      vehiculo_propio: { icon: '🚗', tiempo: '5-20 min', descripcion: 'más estacionamiento' },
+      taxi_uber: { icon: '🚕', tiempo: '5-15 min', descripcion: 'directo entre puntos' }
+    }
+    return transporteInfo[transporte] || transporteInfo.caminata
+  }
+  
+  const transportInfo = getTransportInfo(stepC.transporte)
 
   const ubicacionesComunes = [
     { nombre: 'Centro de la Ciudad', coordenadas: { lat: targetCity?.lat || -33.4372, lon: targetCity?.lon || -70.6506 } },
@@ -74,6 +87,19 @@ export default function StepE() {
           }))}
         />
       </div>
+      
+      {stepC.transporte && (
+        <div className="transport-info">
+          <h4>🚀 Información de Traslados</h4>
+          <div className="transport-details">
+            <span className="transport-icon">{transportInfo.icon}</span>
+            <div className="transport-text">
+              <strong>{stepC.transporte.replace('_', ' ').toUpperCase()}</strong>
+              <p>Tiempo aproximado: <strong>{transportInfo.tiempo}</strong> {transportInfo.descripcion}</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="step-actions">
         <button onClick={() => dispatch(prevStep())} className="prev-btn">

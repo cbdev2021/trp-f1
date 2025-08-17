@@ -14,6 +14,18 @@ export default async function handler(req, res) {
       lon: -70.6506
     }
 
+    // Calcular duración disponible en minutos
+    const calculateDuration = (inicio, fin) => {
+      if (!inicio || !fin) return 480 // Default 8 horas
+      const [startH, startM] = inicio.split(':').map(Number)
+      const [endH, endM] = fin.split(':').map(Number)
+      const startMinutes = startH * 60 + startM
+      const endMinutes = endH * 60 + endM
+      return endMinutes - startMinutes
+    }
+
+    const duracionDisponible = calculateDuration(userData.ventanaHoraria?.inicio, userData.ventanaHoraria?.fin)
+
     // Construir JSON de entrada según documento
     const jsonInput = {
       usuario: {
@@ -22,8 +34,9 @@ export default async function handler(req, res) {
         movil_reducida: userData.restricciones?.includes('movilidad') || false
       },
       viaje: {
-        inicio: userData.ventanaHoraria?.inicio || "2025-01-15T10:00:00-04:00",
-        fin: userData.ventanaHoraria?.fin || "2025-01-15T20:00:00-04:00",
+        inicio: userData.ventanaHoraria?.inicio || "10:00",
+        fin: userData.ventanaHoraria?.fin || "18:00",
+        duracion_disponible_min: duracionDisponible,
         ciudad_destino: {
           nombre: targetCity.name,
           pais: targetCity.country,
@@ -49,6 +62,14 @@ export default async function handler(req, res) {
     const prompt = `Eres un agente experto en turismo global. 
     
 Datos del usuario: ${JSON.stringify(jsonInput)}
+
+IMPORTANTE: El usuario tiene EXACTAMENTE ${duracionDisponible} minutos disponibles (${Math.floor(duracionDisponible/60)}h ${duracionDisponible%60}m). 
+Debes generar SOLO los puntos que caben en este tiempo, considerando:
+- Cada punto necesita su tiempo de visita (duracion_min)
+- Agregar tiempo de transporte entre puntos
+- El tiempo total NO debe exceder ${duracionDisponible} minutos
+- Mínimo 30 min por punto, máximo 120 min por punto
+- Reservar 15-30 min de transporte entre puntos
 
 Genera una ruta turística optimizada para ${targetCity.name}, ${targetCity.country}. RESPONDE ÚNICAMENTE en este formato JSON válido:
 {
@@ -97,29 +118,35 @@ Genera una ruta turística optimizada para ${targetCity.name}, ${targetCity.coun
     try {
       structuredOutput = JSON.parse(data.output)
     } catch (parseError) {
-      // Fallback si el agente no retorna JSON válido
+      // Fallback si el agente no retorna JSON válido - respeta duración disponible
+      const puntosBasicos = [
+        {
+          orden: 1,
+          nombre: "Plaza Principal",
+          tipo: "cultural",
+          duracion_min: 60,
+          coordenadas: { lat: targetCity.lat, lon: targetCity.lon },
+          descripcion: "Centro histórico de la ciudad",
+          costo_estimado: "$0"
+        }
+      ]
+      
+      // Agregar segundo punto solo si hay tiempo suficiente (120+ min)
+      if (duracionDisponible >= 150) {
+        puntosBasicos.push({
+          orden: 2,
+          nombre: "Mirador Principal",
+          tipo: "naturaleza", 
+          duracion_min: Math.min(90, duracionDisponible - 90),
+          coordenadas: { lat: targetCity.lat + 0.01, lon: targetCity.lon + 0.01 },
+          descripcion: "Vista panorámica de la ciudad",
+          costo_estimado: "$3.000"
+        })
+      }
+      
       structuredOutput = {
-        ruta: [
-          {
-            orden: 1,
-            nombre: "Plaza Principal",
-            tipo: "cultural",
-            duracion_min: 45,
-            coordenadas: { lat: -33.4378, lon: -70.6505 },
-            descripcion: "Centro histórico de la ciudad",
-            costo_estimado: "$0"
-          },
-          {
-            orden: 2,
-            nombre: "Mirador Principal",
-            tipo: "naturaleza", 
-            duracion_min: 90,
-            coordenadas: { lat: -33.4373, lon: -70.6366 },
-            descripcion: "Vista panorámica de la ciudad",
-            costo_estimado: "$3.000"
-          }
-        ],
-        tiempo_total_min: 300,
+        ruta: puntosBasicos,
+        tiempo_total_min: Math.min(duracionDisponible, puntosBasicos.reduce((acc, p) => acc + p.duracion_min, 0) + 30),
         transporte_total_min: 30,
         sugerencias_alternativas: [],
         recomendaciones_clima: "Llevar protector solar",
