@@ -26,9 +26,9 @@ export default function StepE() {
   // Efecto para manejar nuevos puntos cargados
   useEffect(() => {
     if (startingPoints.length > previousPointsLength.current && previousPointsLength.current > 0) {
-      // Se agregaron nuevos puntos, posicionar el carousel para mostrarlos
-      const newPointsStartIndex = Math.max(0, previousPointsLength.current - 3)
-      setCurrentIndex(newPointsStartIndex)
+      // Posicionar para mostrar el último elemento anterior como primero visible
+      const lastPreviousIndex = Math.max(0, previousPointsLength.current - 1)
+      setCurrentIndex(lastPreviousIndex)
     }
     previousPointsLength.current = startingPoints.length
   }, [startingPoints.length])
@@ -66,7 +66,7 @@ export default function StepE() {
     const maxIndex = Math.max(0, startingPoints.length - 4)
     if (currentIndex < maxIndex) {
       setCurrentIndex(currentIndex + 1)
-    } else if (currentIndex >= startingPoints.length - 4) {
+    } else if (currentIndex === maxIndex && !startingPointsLoading) {
       dispatch(loadMoreStartingPoints())
     }
   }
