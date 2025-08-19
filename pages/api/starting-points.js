@@ -10,8 +10,6 @@ export default async function handler(req, res) {
 
     const prompt = `Eres experto en ${city.name}, ${city.country}.
 
-COORDENADAS DE REFERENCIA: ${city.lat}, ${city.lon}
-
 PREFERENCIAS DEL USUARIO:
 - Motivos: ${userPreferences.motivos?.join(', ') || 'turismo general'}
 - Estilo: ${userPreferences.estilo || 'relajado'}
@@ -21,22 +19,22 @@ PREFERENCIAS DEL USUARIO:
 ${existingPoints?.length > 0 ? `PROHIBIDO repetir: ${existingPoints.join(', ')}` : ''}
 
 Genera 6 puntos de INICIO ideales para un tour en ${city.name} basado en las preferencias del usuario. Incluye:
-- Hoteles céntricos
-- Estaciones de transporte
-- Plazas principales
-- Centros comerciales
-- Puntos turísticos principales
-- Barrios estratégicos
+- Hoteles céntricos conocidos
+- Estaciones de metro/transporte principales
+- Plazas y parques famosos
+- Centros comerciales importantes
+- Monumentos y puntos turísticos
+- Barrios emblemáticos
+
+USA NOMBRES REALES Y ESPECÍFICOS que Google Maps pueda encontrar fácilmente.
 
 RESPONDE ÚNICAMENTE en este formato JSON:
 [
   {
-    "nombre": "Hotel Plaza Central",
-    "tipo": "hotel",
-    "descripcion": "Hotel céntrico ideal para iniciar tours",
-    "direccion": "Plaza de Armas 123",
-    "coordenadas": {"lat": ${city.lat}, "lon": ${city.lon}},
-    "icono": "🏨"
+    "nombre": "Plaza de Armas",
+    "tipo": "plaza",
+    "descripcion": "Plaza principal e histórica de Santiago",
+    "icono": "🏛️"
   }
 ]`
 
@@ -56,6 +54,33 @@ RESPONDE ÚNICAMENTE en este formato JSON:
       points = JSON.parse(data.output)
     } catch {
       return res.status(500).json({ error: 'IA no generó respuesta válida' })
+    }
+
+    // Obtener coordenadas exactas de Google Maps
+    for (let point of points) {
+      try {
+        const searchQuery = `${point.nombre}, ${city.name}, ${city.country}`
+        const geocodeResponse = await fetch(
+          `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(searchQuery)}&key=${process.env.GOOGLE_MAPS_API_KEY || 'demo'}`
+        )
+        
+        if (geocodeResponse.ok) {
+          const geocodeData = await geocodeResponse.json()
+          if (geocodeData.results && geocodeData.results.length > 0) {
+            const location = geocodeData.results[0].geometry.location
+            point.coordenadas = {
+              lat: location.lat,
+              lon: location.lng
+            }
+            point.direccion = geocodeData.results[0].formatted_address
+          }
+        }
+      } catch (error) {
+        console.log('Geocoding failed for:', point.nombre)
+        // Fallback: usar coordenadas de la ciudad
+        point.coordenadas = { lat: city.lat, lon: city.lon }
+        point.direccion = `${point.nombre}, ${city.name}`
+      }
     }
 
     res.status(200).json(points)

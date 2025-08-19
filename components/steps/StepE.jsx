@@ -83,12 +83,15 @@ export default function StepE() {
         <h2>📍 {stepE.ubicacionInicio ? `Punto seleccionado: ${stepE.ubicacionInicio.direccion}` : `Selecciona punto de inicio en ${(selectedCity || detectedCity).name}`}</h2>
         <div className="map-container">
           <iframe
-            key={`${getMapPoint().lat || getMapPoint().coordenadas?.lat}-${getMapPoint().lon || getMapPoint().coordenadas?.lon}`}
-            src={`https://maps.google.com/maps?q=${getMapPoint().lat || getMapPoint().coordenadas?.lat},${getMapPoint().lon || getMapPoint().coordenadas?.lon}&hl=es&z=12&output=embed`}
+            key={stepE.ubicacionInicio ? stepE.ubicacionInicio.direccion : (selectedCity || detectedCity).name}
+            src={stepE.ubicacionInicio 
+              ? `https://maps.google.com/maps?q=${encodeURIComponent(stepE.ubicacionInicio.direccion)}&hl=es&z=15&output=embed`
+              : `https://maps.google.com/maps?q=${encodeURIComponent((selectedCity || detectedCity).name)}&hl=es&z=12&output=embed`
+            }
             width="100%"
             height="300"
             style={{ border: 'none', borderRadius: '12px' }}
-            title={`Mapa de ${getMapPoint().name || getMapPoint().direccion}`}
+            title={`Mapa de ${stepE.ubicacionInicio?.direccion || (selectedCity || detectedCity).name}`}
             allowFullScreen
           />
         </div>
@@ -111,6 +114,11 @@ export default function StepE() {
                 <h4>{point.nombre}</h4>
                 <p>{point.tipo}</p>
                 <span className="distance">{point.direccion}</span>
+                {point.coordenadas && (
+                  <div className="coordinates">
+                    📍 {point.coordenadas.lat.toFixed(4)}, {point.coordenadas.lon.toFixed(4)}
+                  </div>
+                )}
               </div>
             ))}
             
