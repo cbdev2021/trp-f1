@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/router'
 import { useSelector, useDispatch } from 'react-redux'
 import { loadNearbyCities, loadMoreCities, selectCity } from '../store/tourSlice'
@@ -8,6 +8,7 @@ export default function CitySelector() {
   const dispatch = useDispatch()
   const { detectedCity, nearbyCities, selectedCity, citiesLoading } = useSelector(state => state.tour)
   const [currentIndex, setCurrentIndex] = useState(0)
+  const previousCitiesLength = useRef(0)
 
   useEffect(() => {
     if (!detectedCity) {
@@ -17,6 +18,16 @@ export default function CitySelector() {
     }
     dispatch(loadNearbyCities(detectedCity))
   }, [detectedCity, dispatch, router])
+
+  // Efecto para manejar nuevas ciudades cargadas
+  useEffect(() => {
+    if (nearbyCities.length > previousCitiesLength.current && previousCitiesLength.current > 0) {
+      // Posicionar para mostrar la última ciudad anterior como primera visible
+      const lastPreviousIndex = Math.max(0, previousCitiesLength.current - 1)
+      setCurrentIndex(lastPreviousIndex)
+    }
+    previousCitiesLength.current = nearbyCities.length
+  }, [nearbyCities.length])
 
   const handleCitySelect = (city) => {
     dispatch(selectCity(city))
@@ -31,14 +42,18 @@ export default function CitySelector() {
   }
 
   const nextSlide = () => {
-    if (currentIndex >= nearbyCities.length - 4) {
+    const maxIndex = Math.max(0, nearbyCities.length - 4)
+    if (currentIndex < maxIndex) {
+      setCurrentIndex(currentIndex + 1)
+    } else if (currentIndex === maxIndex && !citiesLoading) {
       dispatch(loadMoreCities())
     }
-    setCurrentIndex((prev) => (prev + 1) % Math.max(1, nearbyCities.length - 3))
   }
 
   const prevSlide = () => {
-    setCurrentIndex((prev) => prev === 0 ? Math.max(0, nearbyCities.length - 4) : prev - 1)
+    if (currentIndex > 0) {
+      setCurrentIndex(currentIndex - 1)
+    }
   }
 
   if (!detectedCity) {

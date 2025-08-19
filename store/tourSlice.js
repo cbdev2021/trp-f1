@@ -244,7 +244,16 @@ const tourSlice = createSlice({
       })
       .addCase(loadNearbyCities.fulfilled, (state, action) => {
         state.citiesLoading = false
-        state.nearbyCities = action.payload
+        // Agregar ciudad detectada como primer elemento
+        const detectedCityFormatted = {
+          name: state.detectedCity.city,
+          country: state.detectedCity.country,
+          lat: state.detectedCity.lat,
+          lon: state.detectedCity.lon,
+          flag: '📍',
+          distance: 0
+        }
+        state.nearbyCities = [detectedCityFormatted, ...action.payload]
       })
       .addCase(loadNearbyCities.rejected, (state) => {
         state.citiesLoading = false
