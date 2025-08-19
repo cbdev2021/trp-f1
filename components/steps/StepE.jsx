@@ -80,18 +80,18 @@ export default function StepE() {
   return (
     <div className="city-selector">
       <div className="map-section">
-        <h2>📍 {stepE.ubicacionInicio ? `Punto seleccionado: ${stepE.ubicacionInicio.direccion}` : `Selecciona punto de inicio en ${(selectedCity || detectedCity).name}`}</h2>
+        <h2>📍 {stepE.ubicacionInicio ? `Punto seleccionado: ${stepE.ubicacionInicio.direccion}` : `Selecciona punto de inicio en ${(selectedCity || detectedCity)?.name || (selectedCity || detectedCity)?.city || 'la ciudad'}`}</h2>
         <div className="map-container">
           <iframe
             key={stepE.ubicacionInicio ? stepE.ubicacionInicio.direccion : (selectedCity || detectedCity).name}
             src={stepE.ubicacionInicio 
               ? `https://maps.google.com/maps?q=${encodeURIComponent(stepE.ubicacionInicio.direccion)}&hl=es&z=15&output=embed`
-              : `https://maps.google.com/maps?q=${encodeURIComponent((selectedCity || detectedCity).name)}&hl=es&z=12&output=embed`
+              : `https://maps.google.com/maps?q=${encodeURIComponent((selectedCity || detectedCity)?.name || (selectedCity || detectedCity)?.city || 'Santiago')}&hl=es&z=12&output=embed`
             }
             width="100%"
             height="300"
             style={{ border: 'none', borderRadius: '12px' }}
-            title={`Mapa de ${stepE.ubicacionInicio?.direccion || (selectedCity || detectedCity).name}`}
+            title={`Mapa de ${stepE.ubicacionInicio?.direccion || (selectedCity || detectedCity)?.name || (selectedCity || detectedCity)?.city || 'la ciudad'}`}
             allowFullScreen
           />
         </div>
