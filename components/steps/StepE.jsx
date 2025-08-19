@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { loadStartingPoints, loadMoreStartingPoints, updateStepE, prevStep, generateTour } from '../../store/tourSlice'
 
@@ -6,6 +6,7 @@ export default function StepE() {
   const dispatch = useDispatch()
   const { detectedCity, startingPoints, selectedPoint, startingPointsLoading, stepA, stepB, stepC, stepD, stepE, loading, selectedCity } = useSelector(state => state.tour)
   const [currentIndex, setCurrentIndex] = useState(0)
+  const previousPointsLength = useRef(0)
 
   useEffect(() => {
     if (!detectedCity) {
@@ -21,6 +22,16 @@ export default function StepE() {
       }
     }))
   }, [detectedCity, dispatch])
+
+  // Efecto para manejar nuevos puntos cargados
+  useEffect(() => {
+    if (startingPoints.length > previousPointsLength.current && previousPointsLength.current > 0) {
+      // Se agregaron nuevos puntos, posicionar el carousel para mostrarlos
+      const newPointsStartIndex = Math.max(0, previousPointsLength.current - 3)
+      setCurrentIndex(newPointsStartIndex)
+    }
+    previousPointsLength.current = startingPoints.length
+  }, [startingPoints.length])
 
   const handlePointSelect = (point) => {
     dispatch(updateStepE({
@@ -52,14 +63,18 @@ export default function StepE() {
   }
 
   const nextSlide = () => {
-    if (currentIndex >= startingPoints.length - 4) {
+    const maxIndex = Math.max(0, startingPoints.length - 4)
+    if (currentIndex < maxIndex) {
+      setCurrentIndex(currentIndex + 1)
+    } else if (currentIndex >= startingPoints.length - 4) {
       dispatch(loadMoreStartingPoints())
     }
-    setCurrentIndex((prev) => (prev + 1) % Math.max(1, startingPoints.length - 3))
   }
 
   const prevSlide = () => {
-    setCurrentIndex((prev) => prev === 0 ? Math.max(0, startingPoints.length - 4) : prev - 1)
+    if (currentIndex > 0) {
+      setCurrentIndex(currentIndex - 1)
+    }
   }
 
   if (!detectedCity) {
