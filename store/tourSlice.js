@@ -52,6 +52,37 @@ export const loadReferencePoints = createAsyncThunk(
   }
 )
 
+// Async thunk para cargar puntos de inicio
+export const loadStartingPoints = createAsyncThunk(
+  'tour/loadStartingPoints',
+  async ({ city, userPreferences }) => {
+    const response = await fetch('/api/starting-points', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ city, userPreferences })
+    })
+    return response.json()
+  }
+)
+
+// Async thunk para cargar más puntos de inicio
+export const loadMoreStartingPoints = createAsyncThunk(
+  'tour/loadMoreStartingPoints',
+  async (_, { getState }) => {
+    const { startingPoints, selectedCity, detectedCity, stepA, stepB, stepC, stepD } = getState().tour
+    const response = await fetch('/api/starting-points', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        city: selectedCity || detectedCity,
+        userPreferences: { ...stepA, ...stepB, ...stepC, ...stepD },
+        existingPoints: (startingPoints || []).map(p => p.nombre)
+      })
+    })
+    return response.json()
+  }
+)
+
 // Async thunk para generar tour
 export const generateTour = createAsyncThunk(
   'tour/generate',
@@ -83,6 +114,10 @@ const tourSlice = createSlice({
     // Puntos referenciales
     referencePoints: [],
     referencePointsLoading: false,
+    
+    // Puntos de inicio
+    startingPoints: [],
+    startingPointsLoading: false,
     
     // Stepper data (5 pasos según documento)
     stepA: { 
@@ -240,6 +275,28 @@ const tourSlice = createSlice({
       .addCase(loadReferencePoints.rejected, (state) => {
         state.referencePointsLoading = false
         state.referencePoints = []
+      })
+      .addCase(loadStartingPoints.pending, (state) => {
+        state.startingPointsLoading = true
+      })
+      .addCase(loadStartingPoints.fulfilled, (state, action) => {
+        state.startingPointsLoading = false
+        state.startingPoints = Array.isArray(action.payload) ? action.payload : []
+      })
+      .addCase(loadStartingPoints.rejected, (state) => {
+        state.startingPointsLoading = false
+        state.startingPoints = []
+      })
+      .addCase(loadMoreStartingPoints.pending, (state) => {
+        state.startingPointsLoading = true
+      })
+      .addCase(loadMoreStartingPoints.fulfilled, (state, action) => {
+        state.startingPointsLoading = false
+        const newPoints = Array.isArray(action.payload) ? action.payload : []
+        state.startingPoints = [...state.startingPoints, ...newPoints]
+      })
+      .addCase(loadMoreStartingPoints.rejected, (state) => {
+        state.startingPointsLoading = false
       })
   }
 })
