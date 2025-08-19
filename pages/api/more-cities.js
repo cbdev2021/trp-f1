@@ -22,7 +22,7 @@ RESPONDE ÚNICAMENTE en este formato JSON:
     "flag": "🇯🇵",
     "lat": 35.6762,
     "lon": 139.6503,
-    "distance": 1200
+    "type": "🏙️ Metrópoli"
   }
 ]`
 
@@ -43,21 +43,28 @@ RESPONDE ÚNICAMENTE en este formato JSON:
     } catch {
       // Fallback si IA falla
       newCities = [
-        { name: 'Tokyo', country: 'Japón', flag: '🇯🇵', lat: 35.6762, lon: 139.6503, distance: 1200 },
-        { name: 'Sydney', country: 'Australia', flag: '🇦🇺', lat: -33.8688, lon: 151.2093, distance: 1500 },
-        { name: 'Dubai', country: 'Emiratos Árabes', flag: '🇦🇪', lat: 25.2048, lon: 55.2708, distance: 1100 },
-        { name: 'Bangkok', country: 'Tailandia', flag: '🇹🇭', lat: 13.7563, lon: 100.5018, distance: 1300 }
+        { name: 'Tokyo', country: 'Japón', flag: 'JP', lat: 35.6762, lon: 139.6503, type: '🏙️ Metrópoli' },
+        { name: 'Sydney', country: 'Australia', flag: 'AU', lat: -33.8688, lon: 151.2093, type: '🏖️ Costera' },
+        { name: 'Dubai', country: 'Emiratos Árabes', flag: 'AE', lat: 25.2048, lon: 55.2708, type: '🏗️ Moderna' },
+        { name: 'Bangkok', country: 'Tailandia', flag: 'TH', lat: 13.7563, lon: 100.5018, type: '🛕 Templos' }
       ]
     }
+
+    // Agregar tipo y bandera si no existen
+    newCities = newCities.map(city => ({
+      ...city,
+      type: city.type || '🏙️ Ciudad',
+      flag: city.flag || 'XX'
+    }))
 
     res.status(200).json(newCities)
   } catch (error) {
     // Fallback en caso de error
     res.status(200).json([
-      { name: 'Istanbul', country: 'Turquía', flag: '🇹🇷', lat: 41.0082, lon: 28.9784, distance: 900 },
-      { name: 'Cairo', country: 'Egipto', flag: '🇪🇬', lat: 30.0444, lon: 31.2357, distance: 800 },
-      { name: 'Mumbai', country: 'India', flag: '🇮🇳', lat: 19.0760, lon: 72.8777, distance: 1400 },
-      { name: 'Cape Town', country: 'Sudáfrica', flag: '🇿🇦', lat: -33.9249, lon: 18.4241, distance: 1000 }
+      { name: 'Istanbul', country: 'Turquía', flag: 'TR', lat: 41.0082, lon: 28.9784, type: '🕌 Histórica' },
+      { name: 'Cairo', country: 'Egipto', flag: 'EG', lat: 30.0444, lon: 31.2357, type: '🏺 Antigua' },
+      { name: 'Mumbai', country: 'India', flag: 'IN', lat: 19.0760, lon: 72.8777, type: '🏙️ Bollywood' },
+      { name: 'Cape Town', country: 'Sudáfrica', flag: 'ZA', lat: -33.9249, lon: 18.4241, type: '🏔️ Montaña' }
     ])
   }
 }

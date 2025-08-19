@@ -251,7 +251,7 @@ const tourSlice = createSlice({
           lat: state.detectedCity.lat,
           lon: state.detectedCity.lon,
           flag: '📍',
-          distance: 0
+          type: '📍 Tu ubicación'
         }
         state.nearbyCities = [detectedCityFormatted, ...action.payload]
       })

@@ -101,10 +101,11 @@ export default function CitySelector() {
                 className={`city-card ${selectedCity?.name === city.name ? 'selected' : ''}`}
                 onClick={() => handleCitySelect(city)}
               >
-                <div className="city-flag">{city.flag}</div>
+                <div className="city-flag" style={{fontSize: '2rem'}}>{city.flag || '🌍'}</div>
                 <h4>{city.name}</h4>
                 <p>{city.country}</p>
-                <span className="distance">{city.distance}km</span>
+                <span className="city-type">{city.type}</span>
+
               </div>
             ))}
             
