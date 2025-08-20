@@ -123,10 +123,9 @@ const tourSlice = createSlice({
     stepA: { 
       demografia: '', 
       presupuesto: '', 
-      ventanaHoraria: { inicio: '', fin: '' },
       tipoRuta: '',
-      fechaInicio: '',
-      fechaFin: ''
+      inicioTour: '',
+      finTour: ''
     },
     stepB: { 
       motivos: [], 
@@ -200,10 +199,9 @@ const tourSlice = createSlice({
         stepA: { 
           demografia: '', 
           presupuesto: '', 
-          ventanaHoraria: { inicio: '', fin: '' },
           tipoRuta: '',
-          fechaInicio: '',
-          fechaFin: ''
+          inicioTour: '',
+          finTour: ''
         },
         currentStep: 1,
         rutaGenerada: null,
@@ -253,7 +251,8 @@ const tourSlice = createSlice({
           flag: '📍',
           type: '📍 Tu ubicación'
         }
-        state.nearbyCities = [detectedCityFormatted, ...action.payload]
+        const cities = Array.isArray(action.payload) ? action.payload : []
+        state.nearbyCities = [detectedCityFormatted, ...cities]
       })
       .addCase(loadNearbyCities.rejected, (state) => {
         state.citiesLoading = false
@@ -263,7 +262,8 @@ const tourSlice = createSlice({
       })
       .addCase(loadMoreCities.fulfilled, (state, action) => {
         state.citiesLoading = false
-        state.nearbyCities = [...state.nearbyCities, ...action.payload]
+        const newCities = Array.isArray(action.payload) ? action.payload : []
+        state.nearbyCities = [...state.nearbyCities, ...newCities]
       })
       .addCase(loadMoreCities.rejected, (state) => {
         state.citiesLoading = false

@@ -1,9 +1,26 @@
 import { useSelector, useDispatch } from 'react-redux'
+import { useEffect } from 'react'
 import { updateStepA, nextStep } from '../../store/tourSlice'
 
 export default function StepA() {
   const dispatch = useDispatch()
   const { stepA, detectedCity } = useSelector(state => state.tour)
+
+  // Establecer valores por defecto si no existen
+  useEffect(() => {
+    if (!stepA.inicioTour) {
+      const tomorrow = new Date()
+      tomorrow.setDate(tomorrow.getDate() + 1)
+      tomorrow.setHours(9, 0, 0, 0)
+      dispatch(updateStepA({ inicioTour: tomorrow.toISOString().slice(0, 16) }))
+    }
+    if (!stepA.finTour) {
+      const tomorrow = new Date()
+      tomorrow.setDate(tomorrow.getDate() + 1)
+      tomorrow.setHours(18, 0, 0, 0)
+      dispatch(updateStepA({ finTour: tomorrow.toISOString().slice(0, 16) }))
+    }
+  }, [])
 
   const demografiaOptions = [
     'solo', 'pareja', 'familia', 'adulto_mayor', 'grupo_amigos'
@@ -19,12 +36,10 @@ export default function StepA() {
   ]
 
   const calculateDuration = () => {
-    if (!stepA.ventanaHoraria.inicio || !stepA.ventanaHoraria.fin) return 0
-    const [startH, startM] = stepA.ventanaHoraria.inicio.split(':').map(Number)
-    const [endH, endM] = stepA.ventanaHoraria.fin.split(':').map(Number)
-    const startMinutes = startH * 60 + startM
-    const endMinutes = endH * 60 + endM
-    return endMinutes - startMinutes
+    if (!stepA.inicioTour || !stepA.finTour) return 0
+    const start = new Date(stepA.inicioTour)
+    const end = new Date(stepA.finTour)
+    return Math.floor((end - start) / (1000 * 60)) // minutos
   }
 
   const duration = calculateDuration()
@@ -32,8 +47,7 @@ export default function StepA() {
 
   const handleNext = () => {
     const requiredFields = stepA.demografia && stepA.presupuesto && 
-                          stepA.ventanaHoraria.inicio && stepA.ventanaHoraria.fin && 
-                          stepA.fechaInicio && stepA.fechaFin && stepA.tipoRuta && isValidDuration
+                          stepA.inicioTour && stepA.finTour && stepA.tipoRuta && isValidDuration
     if (requiredFields) {
       dispatch(nextStep())
     }
@@ -79,24 +93,22 @@ export default function StepA() {
       </div>
 
       <div className="form-group">
-        <label>Hora de inicio:</label>
+        <label>Inicio del tour:</label>
         <input
-          type="time"
-          value={stepA.ventanaHoraria.inicio}
-          onChange={(e) => dispatch(updateStepA({ 
-            ventanaHoraria: { ...stepA.ventanaHoraria, inicio: e.target.value }
-          }))}
+          type="datetime-local"
+          value={stepA.inicioTour || ''}
+          min={new Date().toISOString().slice(0, 16)}
+          onChange={(e) => dispatch(updateStepA({ inicioTour: e.target.value }))}
         />
       </div>
-
+      
       <div className="form-group">
-        <label>Hora de término:</label>
+        <label>Fin del tour:</label>
         <input
-          type="time"
-          value={stepA.ventanaHoraria.fin}
-          onChange={(e) => dispatch(updateStepA({ 
-            ventanaHoraria: { ...stepA.ventanaHoraria, fin: e.target.value }
-          }))}
+          type="datetime-local"
+          value={stepA.finTour || ''}
+          min={stepA.inicioTour || new Date().toISOString().slice(0, 16)}
+          onChange={(e) => dispatch(updateStepA({ finTour: e.target.value }))}
         />
       </div>
       
@@ -114,26 +126,6 @@ export default function StepA() {
           ))}
         </select>
       </div>
-      
-      <div className="form-group">
-        <label>Fecha de inicio:</label>
-        <input
-          type="date"
-          value={stepA.fechaInicio || ''}
-          min={new Date().toISOString().split('T')[0]}
-          onChange={(e) => dispatch(updateStepA({ fechaInicio: e.target.value }))}
-        />
-      </div>
-      
-      <div className="form-group">
-        <label>Fecha de término:</label>
-        <input
-          type="date"
-          value={stepA.fechaFin || ''}
-          min={stepA.fechaInicio || new Date().toISOString().split('T')[0]}
-          onChange={(e) => dispatch(updateStepA({ fechaFin: e.target.value }))}
-        />
-      </div>
 
       {duration > 0 && duration < 120 && (
         <div className="warning-message">
@@ -143,7 +135,7 @@ export default function StepA() {
 
       <button 
         onClick={handleNext}
-        disabled={!stepA.demografia || !stepA.presupuesto || !stepA.ventanaHoraria.inicio || !stepA.ventanaHoraria.fin || !stepA.fechaInicio || !stepA.fechaFin || !stepA.tipoRuta || !isValidDuration}
+        disabled={!stepA.demografia || !stepA.presupuesto || !stepA.inicioTour || !stepA.finTour || !stepA.tipoRuta || !isValidDuration}
         className="next-btn"
       >
         Siguiente
