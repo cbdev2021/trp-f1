@@ -1089,3 +1089,283 @@ body {
     overflow-y: auto;
   }
 }
+/* Interactive Map Styles */
+.interactive-map-container {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.map-header {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.map-header h4 {
+  color: #2c3e50;
+  margin-bottom: 8px;
+  font-size: 1.3rem;
+}
+
+.map-header p {
+  color: #7f8c8d;
+  margin: 0;
+}
+
+.embedded-map {
+  margin-bottom: 20px;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.route-points {
+  margin-bottom: 20px;
+}
+
+.route-points h5 {
+  color: #2c3e50;
+  margin-bottom: 15px;
+  text-align: center;
+}
+
+.points-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 10px;
+}
+
+.route-point {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.route-point .point-number {
+  width: 30px;
+  height: 30px;
+  background: #3498db;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  margin-right: 12px;
+  font-size: 0.9rem;
+}
+
+.point-details strong {
+  display: block;
+  color: #2c3e50;
+  margin-bottom: 4px;
+  font-size: 0.95rem;
+}
+
+.point-details small {
+  color: #7f8c8d;
+  font-size: 0.8rem;
+}
+
+.map-controls {
+  text-align: center;
+}
+
+.open-in-maps-btn {
+  background: #4285f4;
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.3s;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.open-in-maps-btn:hover {
+  background: #3367d6;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+@media (max-width: 768px) {
+  .points-list {
+    grid-template-columns: 1fr;
+  }
+  
+  .route-point {
+    padding: 10px;
+  }
+  
+  .route-point .point-number {
+    width: 25px;
+    height: 25px;
+    font-size: 0.8rem;
+  }
+}
+.embedded-map {
+  position: relative;
+  margin-bottom: 20px;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.map-overlay {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  right: 10px;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 10px;
+  border-radius: 8px;
+  text-align: center;
+  backdrop-filter: blur(5px);
+}
+
+.map-overlay p {
+  margin: 0 0 4px 0;
+  font-weight: 500;
+  color: #2c3e50;
+}
+
+.map-overlay small {
+  color: #7f8c8d;
+  font-size: 0.8rem;
+}
+/* Interactive Route Points */
+.route-point {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 2px solid #e9ecef;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.route-point:hover {
+  border-color: #3498db;
+  background: #e3f2fd;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.route-point.active {
+  border-color: #27ae60;
+  background: #d5f4e6;
+  box-shadow: 0 2px 12px rgba(39, 174, 96, 0.2);
+}
+
+.route-point .point-number {
+  width: 35px;
+  height: 35px;
+  background: #3498db;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  margin-right: 12px;
+  font-size: 1rem;
+  transition: all 0.3s;
+}
+
+.route-point.active .point-number {
+  background: #27ae60;
+  transform: scale(1.1);
+}
+
+.point-action {
+  margin-left: auto;
+  font-size: 1.2rem;
+  opacity: 0.6;
+  transition: opacity 0.3s;
+}
+
+.route-point:hover .point-action {
+  opacity: 1;
+}
+
+/* Map Navigation Controls */
+.map-navigation {
+  margin-top: 20px;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.nav-btn {
+  background: #6c757d;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.nav-btn.active {
+  background: #3498db;
+}
+
+.nav-btn:hover {
+  background: #495057;
+}
+
+.nav-btn.active:hover {
+  background: #2980b9;
+}
+
+.point-nav {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.point-nav-btn {
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  border: 2px solid #dee2e6;
+  background: white;
+  color: #6c757d;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.3s;
+}
+
+.point-nav-btn:hover {
+  border-color: #3498db;
+  color: #3498db;
+}
+
+.point-nav-btn.active {
+  background: #27ae60;
+  border-color: #27ae60;
+  color: white;
+  transform: scale(1.1);
+}
+
+@media (max-width: 768px) {
+  .point-nav {
+    gap: 6px;
+  }
+  
+  .point-nav-btn {
+    width: 30px;
+    height: 30px;
+    font-size: 0.9rem;
+  }
+}
