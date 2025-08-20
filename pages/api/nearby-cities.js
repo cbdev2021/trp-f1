@@ -50,19 +50,7 @@ RESPONDE ÚNICAMENTE en este formato JSON:
 
     const data = await response.json()
     
-    let cities
-    try {
-      cities = JSON.parse(data.output)
-    } catch {
-      // Fallback si IA falla con coordenadas precisas
-      cities = [
-        { name: 'Mendoza', country: 'Argentina', flag: 'AR', lat: -32.8908, lon: -68.8272, type: '🍷 Vinos' },
-        { name: 'Buenos Aires', country: 'Argentina', flag: 'AR', lat: -34.6118, lon: -58.3960, type: '🏙️ Metrópoli' },
-        { name: 'Valparaíso', country: 'Chile', flag: 'CL', lat: -33.0458, lon: -71.6197, type: '🏖️ Costera' },
-        { name: 'Córdoba', country: 'Argentina', flag: 'AR', lat: -31.4201, lon: -64.1888, type: '🏛️ Colonial' },
-        { name: 'La Serena', country: 'Chile', flag: 'CL', lat: -29.9027, lon: -71.2519, type: '🏖️ Playa' }
-      ]
-    }
+    let cities = JSON.parse(data.output)
 
     // Agregar tipo y bandera si no existen
     cities = cities.map(city => ({
@@ -73,15 +61,6 @@ RESPONDE ÚNICAMENTE en este formato JSON:
 
     res.status(200).json(cities)
   } catch (error) {
-    // Fallback en caso de error con distancias calculadas
-    const fallbackCities = [
-      { name: 'Madrid', country: 'España', flag: 'ES', lat: 40.4168, lon: -3.7038, type: '🏛️ Cultural' },
-      { name: 'Paris', country: 'Francia', flag: 'FR', lat: 48.8566, lon: 2.3522, type: '🎨 Arte' },
-      { name: 'Rome', country: 'Italia', flag: 'IT', lat: 41.9028, lon: 12.4964, type: '🏛️ Histórica' },
-      { name: 'Berlin', country: 'Alemania', flag: 'DE', lat: 52.5200, lon: 13.4050, type: '🏙️ Moderna' },
-      { name: 'London', country: 'Reino Unido', flag: 'GB', lat: 51.5074, lon: -0.1278, type: '👑 Imperial' }
-    ]
-    
-    res.status(200).json(fallbackCities)
+    res.status(500).json({ error: 'Error generating cities' })
   }
 }
