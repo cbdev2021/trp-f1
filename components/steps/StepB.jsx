@@ -5,59 +5,77 @@ export default function StepB() {
   const dispatch = useDispatch()
   const { stepB } = useSelector(state => state.tour)
 
-  const motivosOptions = [
-    'naturaleza', 'cultura', 'historia', 'gastronomia', 
-    'vida_nocturna', 'bohemio', 'aventura', 'relax'
+  const tipoExperienciaOptions = [
+    'cultural', 'gastronomica', 'aventura', 'relajacion', 'nocturna', 'naturaleza'
   ]
 
-  const estiloOptions = [
-    'relajado', 'intensivo', 'aventurero', 'cultural'
+  const intensidadOptions = [
+    'relajado', 'moderado', 'activo', 'intenso'
   ]
 
-  const handleMotivoChange = (motivo) => {
-    const newMotivos = stepB.motivos.includes(motivo)
-      ? stepB.motivos.filter(m => m !== motivo)
-      : [...stepB.motivos, motivo]
+  const duracionOptions = [
+    '2-3h', '4-6h', 'dia_completo', 'varios_dias'
+  ]
+
+  const handleExperienciaChange = (experiencia) => {
+    const newExperiencias = stepB.tipoExperiencia?.includes(experiencia)
+      ? stepB.tipoExperiencia.filter(e => e !== experiencia)
+      : [...(stepB.tipoExperiencia || []), experiencia]
     
-    dispatch(updateStepB({ motivos: newMotivos }))
+    dispatch(updateStepB({ tipoExperiencia: newExperiencias }))
   }
 
   const handleNext = () => {
-    if (stepB.motivos.length > 0 && stepB.estilo) {
+    if (stepB.tipoExperiencia?.length > 0 && stepB.intensidad && stepB.duracionPreferida) {
       dispatch(nextStep())
     }
   }
 
   return (
     <div className="step-content">
-      <h2>Preferencias Personales</h2>
+      <h2>🎯 Experiencia Deseada</h2>
       
       <div className="form-group">
-        <label>Motivos del paseo (selecciona varios):</label>
+        <label>Tipo de experiencia (selecciona varias):</label>
         <div className="checkbox-group">
-          {motivosOptions.map(motivo => (
-            <label key={motivo} className="checkbox-label">
+          {tipoExperienciaOptions.map(experiencia => (
+            <label key={experiencia} className="checkbox-label">
               <input
                 type="checkbox"
-                checked={stepB.motivos.includes(motivo)}
-                onChange={() => handleMotivoChange(motivo)}
+                checked={stepB.tipoExperiencia?.includes(experiencia) || false}
+                onChange={() => handleExperienciaChange(experiencia)}
               />
-              {motivo.replace('_', ' ').toUpperCase()}
+              {experiencia.toUpperCase()}
             </label>
           ))}
         </div>
       </div>
 
       <div className="form-group">
-        <label>Estilo de viaje:</label>
+        <label>Intensidad del tour:</label>
         <select 
-          value={stepB.estilo} 
-          onChange={(e) => dispatch(updateStepB({ estilo: e.target.value }))}
+          value={stepB.intensidad || ''} 
+          onChange={(e) => dispatch(updateStepB({ intensidad: e.target.value }))}
         >
           <option value="">Selecciona...</option>
-          {estiloOptions.map(option => (
+          {intensidadOptions.map(option => (
             <option key={option} value={option}>
               {option.toUpperCase()}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="form-group">
+        <label>Duración preferida:</label>
+        <select 
+          value={stepB.duracionPreferida || ''} 
+          onChange={(e) => dispatch(updateStepB({ duracionPreferida: e.target.value }))}
+        >
+          <option value="">Selecciona...</option>
+          {duracionOptions.map(option => (
+            <option key={option} value={option}>
+              {option.replace('_', ' ').toUpperCase()}
             </option>
           ))}
         </select>
@@ -69,7 +87,7 @@ export default function StepB() {
         </button>
         <button 
           onClick={handleNext}
-          disabled={stepB.motivos.length === 0 || !stepB.estilo}
+          disabled={!stepB.tipoExperiencia?.length || !stepB.intensidad || !stepB.duracionPreferida}
           className="next-btn"
         >
           Siguiente

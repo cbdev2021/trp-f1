@@ -15,9 +15,9 @@ export default function StepE() {
     dispatch(loadStartingPoints({
       city: selectedCity || detectedCity,
       userPreferences: {
-        motivos: stepB.motivos || [],
-        estilo: stepB.estilo || 'relajado',
-        interesesDetallados: stepD.interesesDetallados || [],
+        tipoExperiencia: stepB.tipoExperiencia || [],
+        intensidad: stepB.intensidad || 'relajado',
+        interesesEspecificos: stepC.interesesEspecificos || [],
         transporte: stepC.transporte || 'caminata'
       }
     }))

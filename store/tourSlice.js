@@ -128,16 +128,18 @@ const tourSlice = createSlice({
       finTour: ''
     },
     stepB: { 
-      motivos: [], 
-      estilo: '' 
+      tipoExperiencia: [], 
+      intensidad: '',
+      duracionPreferida: ''
     },
     stepC: { 
+      interesesEspecificos: [],
       restricciones: [], 
-      transporte: '' 
+      transporte: '',
+      preferenciaAmbiente: ''
     },
     stepD: { 
-      interesesDetallados: [], 
-      eventos: false 
+      // Eliminado - consolidado en stepC
     },
     stepE: { 
       ubicacionInicio: null 
@@ -202,6 +204,17 @@ const tourSlice = createSlice({
           tipoRuta: '',
           inicioTour: '',
           finTour: ''
+        },
+        stepB: { 
+          tipoExperiencia: [], 
+          intensidad: '',
+          duracionPreferida: ''
+        },
+        stepC: { 
+          interesesEspecificos: [],
+          restricciones: [], 
+          transporte: '',
+          preferenciaAmbiente: ''
         },
         currentStep: 1,
         rutaGenerada: null,
