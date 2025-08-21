@@ -3,7 +3,37 @@ import { updateStepB, nextStep, prevStep } from '../../store/tourSlice'
 
 export default function StepB() {
   const dispatch = useDispatch()
-  const { stepB } = useSelector(state => state.tour)
+  const { stepB, stepA } = useSelector(state => state.tour)
+
+  // Calcular horas disponibles por día
+  const getAvailableHoursPerDay = () => {
+    if (!stepA.inicioTour || !stepA.finTour) return null
+    
+    const inicio = new Date(stepA.inicioTour)
+    const fin = new Date(stepA.finTour)
+    const diffMs = fin - inicio
+    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24))
+    const diffHours = diffMs / (1000 * 60 * 60)
+    
+    return diffDays > 0 ? diffHours / diffDays : diffHours
+  }
+
+  const horasPorDia = getAvailableHoursPerDay()
+
+  // Determinar qué opciones están disponibles
+  const isOptionAvailable = (option) => {
+    if (!horasPorDia || option.value === 'flexible') return true
+    
+    const ranges = {
+      '2-3h': { min: 2, max: 3 },
+      '4-5h': { min: 4, max: 5 },
+      '6-7h': { min: 6, max: 7 },
+      '8-10h': { min: 8, max: 10 }
+    }
+    
+    const range = ranges[option.value]
+    return range ? horasPorDia >= range.min : true
+  }
 
   const tipoExperienciaOptions = [
     'cultural', 'gastronomica', 'aventura', 'relajacion', 'nocturna', 'naturaleza'
@@ -14,7 +44,11 @@ export default function StepB() {
   ]
 
   const duracionOptions = [
-    '2-3h', '4-6h', 'dia_completo', 'varios_dias'
+    { value: '2-3h', label: '2-3H' },
+    { value: '4-5h', label: '4-5H' },
+    { value: '6-7h', label: '6-7H' },
+    { value: '8-10h', label: '8-10H' },
+    { value: 'flexible', label: 'FLEXIBLE (IA optimiza tiempos diarios)' }
   ]
 
   const handleExperienciaChange = (experiencia) => {
@@ -67,17 +101,25 @@ export default function StepB() {
       </div>
 
       <div className="form-group">
-        <label>Duración preferida:</label>
+        <label>Horas diarias de actividades:</label>
         <select 
           value={stepB.duracionPreferida || ''} 
           onChange={(e) => dispatch(updateStepB({ duracionPreferida: e.target.value }))}
         >
           <option value="">Selecciona...</option>
-          {duracionOptions.map(option => (
-            <option key={option} value={option}>
-              {option.replace('_', ' ').toUpperCase()}
-            </option>
-          ))}
+          {duracionOptions.map(option => {
+            const available = isOptionAvailable(option)
+            return (
+              <option 
+                key={option.value} 
+                value={option.value}
+                disabled={!available}
+                style={{ color: available ? 'inherit' : '#999' }}
+              >
+                {option.label}
+              </option>
+            )
+          })}
         </select>
       </div>
 
