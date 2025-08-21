@@ -15,62 +15,76 @@ export default async function handler(req, res) {
     const ciudad = userData.selectedCity || userData.detectedCity
     const puntoInicio = userData.ubicacionInicio
 
-    // Calcular tiempo disponible y cantidad de puntos
-    const calcularPuntosOptimos = () => {
+    // Calcular días y actividades por día
+    const calcularItinerarioCompleto = () => {
       const inicio = new Date(fechaHoraInicio)
       const fin = new Date(fechaHoraFin)
-      const tiempoTotalMin = (fin - inicio) / (1000 * 60)
       
-      // Tiempos base por tipo de actividad (en minutos)
+      // Calcular días completos
+      const diasTotales = Math.ceil((fin - inicio) / (1000 * 60 * 60 * 24))
+      
+      // Obtener horas diarias de actividades del usuario
+      const horasDiarias = userData.horasDiarias || '4-6h' // default
+      
+      // Convertir horas diarias a minutos
+      const rangosHoras = {
+        '2-3h': 150,   // 2.5h promedio
+        '4-6h': 300,   // 5h promedio  
+        '6-8h': 420,   // 7h promedio
+        '8-10h': 540   // 9h promedio
+      }
+      
+      const minutosPorDia = rangosHoras[horasDiarias] || 300
+      
+      // Tiempos base por categoría (en minutos)
       const tiemposBase = {
-        museo: 75, galeria: 75, monumento: 37, iglesia: 37,
-        parque: 52, plaza: 52, restaurante: 75, mercado: 60,
-        shopping: 60, show: 90, bar: 60, discoteca: 120
+        cultura: 75, naturaleza: 60, gastronomia: 75,
+        compras: 60, entretenimiento: 90, experiencias: 90
       }
       
-      // Determinar tipo de actividades según preferencias
-      const tipoActividades = []
-      if (userData.tipoExperiencia?.includes('cultural')) {
-        tipoActividades.push('museo', 'monumento', 'iglesia')
-      }
-      if (userData.tipoExperiencia?.includes('gastronomica')) {
-        tipoActividades.push('restaurante', 'mercado')
-      }
-      if (userData.tipoExperiencia?.includes('nocturna')) {
-        tipoActividades.push('bar', 'discoteca')
-      }
-      if (userData.interesesEspecificos?.includes('shopping')) {
-        tipoActividades.push('shopping', 'mercado')
-      }
-      if (userData.tipoExperiencia?.includes('naturaleza')) {
-        tipoActividades.push('parque', 'plaza')
-      }
+      // Determinar categorías según preferencias
+      const categorias = []
+      if (userData.tipoExperiencia?.includes('cultural')) categorias.push('cultura')
+      if (userData.tipoExperiencia?.includes('gastronomica')) categorias.push('gastronomia')
+      if (userData.tipoExperiencia?.includes('nocturna')) categorias.push('entretenimiento')
+      if (userData.interesesEspecificos?.includes('shopping')) categorias.push('compras')
+      if (userData.tipoExperiencia?.includes('naturaleza')) categorias.push('naturaleza')
       
       // Tiempo promedio por actividad
-      const tiempoPromedio = tipoActividades.length > 0 
-        ? tipoActividades.reduce((sum, tipo) => sum + (tiemposBase[tipo] || 60), 0) / tipoActividades.length
-        : 60
+      const tiempoPromedio = categorias.length > 0 
+        ? categorias.reduce((sum, cat) => sum + tiemposBase[cat], 0) / categorias.length
+        : 70
       
-      // Calcular puntos considerando traslados (15 min entre puntos)
-      const puntosCalculados = Math.floor(tiempoTotalMin / (tiempoPromedio + 15))
+      // Calcular actividades por día (considerando 15 min de traslado)
+      const actividadesPorDia = Math.floor(minutosPorDia / (tiempoPromedio + 15))
       
-      // Limitar entre 2-8 puntos
-      return Math.max(2, Math.min(8, puntosCalculados))
+      // Total de actividades para todos los días
+      const totalActividades = diasTotales * Math.max(1, actividadesPorDia)
+      
+      return {
+        diasTotales,
+        actividadesPorDia: Math.max(1, actividadesPorDia),
+        totalActividades: Math.min(totalActividades, 50), // Límite máximo
+        minutosPorDia,
+        horasDiarias
+      }
     }
     
-    const puntosOptimos = calcularPuntosOptimos()
+    const itinerario = calcularItinerarioCompleto()
     
     // Logs para debugging
-    console.log('=== CÁLCULO DE PUNTOS ÓPTIMOS ===')
-    console.log('Tiempo total:', Math.floor((new Date(fechaHoraFin) - new Date(fechaHoraInicio)) / (1000 * 60)), 'minutos')
+    console.log('=== CÁLCULO DE ITINERARIO COMPLETO ===')
+    console.log('Días totales:', itinerario.diasTotales)
+    console.log('Horas diarias:', itinerario.horasDiarias)
+    console.log('Minutos por día:', itinerario.minutosPorDia)
+    console.log('Actividades por día:', itinerario.actividadesPorDia)
+    console.log('Total actividades:', itinerario.totalActividades)
     console.log('Tipo experiencia:', userData.tipoExperiencia)
-    console.log('Intereses específicos:', userData.interesesEspecificos)
-    console.log('Puntos calculados:', puntosOptimos)
-    console.log('Datos completos userData:', JSON.stringify(userData, null, 2))
     
     // Generar modificadores críticos del prompt
     const criticalPromptModifiers = generateCriticalPrompt(userData)
     console.log('Modificadores críticos generados:', criticalPromptModifiers)
+    console.log('userData completo:', JSON.stringify(userData, null, 2))
     
     const prompt = `IMPORTANTE: Debes crear una ruta turística que COMIENCE OBLIGATORIAMENTE en el punto seleccionado por el usuario.
 
@@ -79,21 +93,15 @@ DATOS DEL TOUR:
 - PUNTO DE INICIO OBLIGATORIO: ${puntoInicio?.direccion}
 - COORDENADAS INICIO: ${puntoInicio?.coordenadas?.lat || ciudad?.lat}, ${puntoInicio?.coordenadas?.lon || ciudad?.lon}
 - FECHA/HORA: ${fechaHoraInicio} hasta ${fechaHoraFin}
+- DURACIÓN: ${itinerario.diasTotales} días, ${itinerario.horasDiarias} diarias
 - PREFERENCIAS: ${criticalPromptModifiers}
 - TRANSPORTE: ${userData.transporte}
 
-OBLIGATORIO: Crea una ruta con EXACTAMENTE ${puntosOptimos} puntos. El primer punto DEBE ser "${puntoInicio?.direccion}", luego agrega ${puntosOptimos - 1} puntos más.
+OBLIGATORIO: Crea una ruta de ${itinerario.diasTotales} días con ${itinerario.totalActividades} actividades (${itinerario.actividadesPorDia} por día, ${itinerario.horasDiarias} diarias). El primer punto DEBE ser "${puntoInicio?.direccion}".
 
-TIEMPOS BASE POR TIPO:
-- Museos/Galerías: 60-90 min
-- Monumentos/Iglesias: 30-45 min  
-- Parques/Plazas: 45-60 min
-- Restaurantes: 60-90 min
-- Mercados/Shopping: 45-75 min
-- Bares/Vida nocturna: 60-120 min
-- Considera 15 min de traslado entre puntos
+TIEMPOS: Cultura 75min, Naturaleza 60min, Gastronomía 75min, Compras 60min, Entretenimiento 90min + 15min traslados
 
-RESPONDE SOLO JSON con ${puntosOptimos} puntos:
+RESPONDE SOLO JSON con ${itinerario.totalActividades} actividades distribuidas en ${itinerario.diasTotales} días:
 {
   "titulo": "Tour por ${ciudad?.city || ciudad?.name}",
   "duracion": "${Math.ceil((new Date(fechaHoraFin) - new Date(fechaHoraInicio)) / (1000 * 60 * 60 * 24))} día(s)",
@@ -107,7 +115,7 @@ RESPONDE SOLO JSON con ${puntosOptimos} puntos:
       "coordenadas": {"lat": ${puntoInicio?.coordenadas?.lat || ciudad?.lat || -33.4521}, "lon": ${puntoInicio?.coordenadas?.lon || ciudad?.lon || -70.6536}},
       "costo_estimado": "$0",
       "duracion_min": 30
-    }${Array.from({length: puntosOptimos - 1}, (_, i) => `,
+    }${Array.from({length: itinerario.totalActividades - 1}, (_, i) => `,
     {
       "orden": ${i + 2},
       "nombre": "[PUNTO ${i + 2}]",
@@ -120,7 +128,9 @@ RESPONDE SOLO JSON con ${puntosOptimos} puntos:
     }`).join('')}
   ],
   "costo_total_estimado": "[CALCULAR]",
-  "transporte_total_min": ${(puntosOptimos - 1) * 15},
+  "transporte_total_min": ${(itinerario.totalActividades - 1) * 15},
+  "dias_totales": ${itinerario.diasTotales},
+  "actividades_por_dia": ${itinerario.actividadesPorDia},
   "consejos": ["Comenzar puntualmente en ${puntoInicio?.direccion}", "Respetar horarios"]
 }`
 
@@ -138,15 +148,17 @@ RESPONDE SOLO JSON con ${puntosOptimos} puntos:
     }
 
     const data = await response.json()
+    console.log('Respuesta completa de la IA:', JSON.stringify(data, null, 2))
+    console.log('Cantidad de puntos en ruta:', data.output ? JSON.parse(data.output).ruta?.length : 'No hay ruta')
     
     // Procesar la respuesta para extraer JSON válido
     let tourData
     try {
       if (data.output) {
-        // Intentar parsear directamente
+        console.log('Output de la IA:', data.output)
         tourData = JSON.parse(data.output)
+        console.log('Tour parseado - puntos en ruta:', tourData.ruta?.length)
       } else {
-        // Si no hay output, crear estructura básica
         tourData = {
           titulo: `Tour por ${ciudad?.city || ciudad?.name}`,
           duracion: "1 día",
@@ -169,7 +181,7 @@ RESPONDE SOLO JSON con ${puntosOptimos} puntos:
         }
       }
     } catch (error) {
-      // Fallback con datos básicos
+      console.error('Error parseando JSON:', error)
       tourData = {
         titulo: `Tour por ${ciudad?.city || ciudad?.name}`,
         duracion: "1 día",
@@ -192,6 +204,7 @@ RESPONDE SOLO JSON con ${puntosOptimos} puntos:
       }
     }
     
+    console.log('Tour final enviado al frontend - puntos:', tourData.ruta?.length)
     res.status(200).json(tourData)
   } catch (error) {
     console.error('Tour generation error:', error)
