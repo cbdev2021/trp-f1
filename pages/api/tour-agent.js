@@ -1,3 +1,5 @@
+import { generateCriticalPrompt } from '../../store/promptModifiers'
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
@@ -13,6 +15,63 @@ export default async function handler(req, res) {
     const ciudad = userData.selectedCity || userData.detectedCity
     const puntoInicio = userData.ubicacionInicio
 
+    // Calcular tiempo disponible y cantidad de puntos
+    const calcularPuntosOptimos = () => {
+      const inicio = new Date(fechaHoraInicio)
+      const fin = new Date(fechaHoraFin)
+      const tiempoTotalMin = (fin - inicio) / (1000 * 60)
+      
+      // Tiempos base por tipo de actividad (en minutos)
+      const tiemposBase = {
+        museo: 75, galeria: 75, monumento: 37, iglesia: 37,
+        parque: 52, plaza: 52, restaurante: 75, mercado: 60,
+        shopping: 60, show: 90, bar: 60, discoteca: 120
+      }
+      
+      // Determinar tipo de actividades según preferencias
+      const tipoActividades = []
+      if (userData.tipoExperiencia?.includes('cultural')) {
+        tipoActividades.push('museo', 'monumento', 'iglesia')
+      }
+      if (userData.tipoExperiencia?.includes('gastronomica')) {
+        tipoActividades.push('restaurante', 'mercado')
+      }
+      if (userData.tipoExperiencia?.includes('nocturna')) {
+        tipoActividades.push('bar', 'discoteca')
+      }
+      if (userData.interesesEspecificos?.includes('shopping')) {
+        tipoActividades.push('shopping', 'mercado')
+      }
+      if (userData.tipoExperiencia?.includes('naturaleza')) {
+        tipoActividades.push('parque', 'plaza')
+      }
+      
+      // Tiempo promedio por actividad
+      const tiempoPromedio = tipoActividades.length > 0 
+        ? tipoActividades.reduce((sum, tipo) => sum + (tiemposBase[tipo] || 60), 0) / tipoActividades.length
+        : 60
+      
+      // Calcular puntos considerando traslados (15 min entre puntos)
+      const puntosCalculados = Math.floor(tiempoTotalMin / (tiempoPromedio + 15))
+      
+      // Limitar entre 2-8 puntos
+      return Math.max(2, Math.min(8, puntosCalculados))
+    }
+    
+    const puntosOptimos = calcularPuntosOptimos()
+    
+    // Logs para debugging
+    console.log('=== CÁLCULO DE PUNTOS ÓPTIMOS ===')
+    console.log('Tiempo total:', Math.floor((new Date(fechaHoraFin) - new Date(fechaHoraInicio)) / (1000 * 60)), 'minutos')
+    console.log('Tipo experiencia:', userData.tipoExperiencia)
+    console.log('Intereses específicos:', userData.interesesEspecificos)
+    console.log('Puntos calculados:', puntosOptimos)
+    console.log('Datos completos userData:', JSON.stringify(userData, null, 2))
+    
+    // Generar modificadores críticos del prompt
+    const criticalPromptModifiers = generateCriticalPrompt(userData)
+    console.log('Modificadores críticos generados:', criticalPromptModifiers)
+    
     const prompt = `IMPORTANTE: Debes crear una ruta turística que COMIENCE OBLIGATORIAMENTE en el punto seleccionado por el usuario.
 
 DATOS DEL TOUR:
@@ -20,16 +79,24 @@ DATOS DEL TOUR:
 - PUNTO DE INICIO OBLIGATORIO: ${puntoInicio?.direccion}
 - COORDENADAS INICIO: ${puntoInicio?.coordenadas?.lat || ciudad?.lat}, ${puntoInicio?.coordenadas?.lon || ciudad?.lon}
 - FECHA/HORA: ${fechaHoraInicio} hasta ${fechaHoraFin}
-- VIAJERO: ${userData.demografia}, presupuesto ${userData.presupuesto}
-- INTERESES: ${userData.interesesDetallados?.join(', ')}
+- PREFERENCIAS: ${criticalPromptModifiers}
 - TRANSPORTE: ${userData.transporte}
 
-Crea una ruta de 4-6 puntos que INICIE en "${puntoInicio?.direccion}" y visite lugares relacionados con los intereses del usuario.
+OBLIGATORIO: Crea una ruta con EXACTAMENTE ${puntosOptimos} puntos. El primer punto DEBE ser "${puntoInicio?.direccion}", luego agrega ${puntosOptimos - 1} puntos más.
 
-RESPONDE SOLO JSON:
+TIEMPOS BASE POR TIPO:
+- Museos/Galerías: 60-90 min
+- Monumentos/Iglesias: 30-45 min  
+- Parques/Plazas: 45-60 min
+- Restaurantes: 60-90 min
+- Mercados/Shopping: 45-75 min
+- Bares/Vida nocturna: 60-120 min
+- Considera 15 min de traslado entre puntos
+
+RESPONDE SOLO JSON con ${puntosOptimos} puntos:
 {
   "titulo": "Tour por ${ciudad?.city || ciudad?.name}",
-  "duracion": "1 día",
+  "duracion": "${Math.ceil((new Date(fechaHoraFin) - new Date(fechaHoraInicio)) / (1000 * 60 * 60 * 24))} día(s)",
   "ruta": [
     {
       "orden": 1,
@@ -40,11 +107,21 @@ RESPONDE SOLO JSON:
       "coordenadas": {"lat": ${puntoInicio?.coordenadas?.lat || ciudad?.lat || -33.4521}, "lon": ${puntoInicio?.coordenadas?.lon || ciudad?.lon || -70.6536}},
       "costo_estimado": "$0",
       "duracion_min": 30
-    }
+    }${Array.from({length: puntosOptimos - 1}, (_, i) => `,
+    {
+      "orden": ${i + 2},
+      "nombre": "[PUNTO ${i + 2}]",
+      "tipo": "[TIPO]",
+      "tiempo": "[HORA]",
+      "descripcion": "[DESCRIPCIÓN]",
+      "coordenadas": {"lat": [LAT], "lon": [LON]},
+      "costo_estimado": "[COSTO]",
+      "duracion_min": [MINUTOS]
+    }`).join('')}
   ],
-  "costo_total_estimado": "$25000",
-  "transporte_total_min": 45,
-  "consejos": ["Comenzar puntualmente en ${puntoInicio?.direccion}", "Llevar agua"]
+  "costo_total_estimado": "[CALCULAR]",
+  "transporte_total_min": ${(puntosOptimos - 1) * 15},
+  "consejos": ["Comenzar puntualmente en ${puntoInicio?.direccion}", "Respetar horarios"]
 }`
 
     const response = await fetch('https://primary-production-e9dc.up.railway.app/webhook/postman-webhook', {
