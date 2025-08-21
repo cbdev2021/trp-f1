@@ -69,8 +69,9 @@ export default function ItineraryList() {
             <div className="summary-item">
               <span className="summary-icon">📅</span>
               <div className="summary-text">
-                <strong>{totalDias} día{totalDias > 1 ? 's' : ''}</strong>
-                <small>{stepA.fechaInicio} - {stepA.fechaFin}</small>
+                {/* <strong>{totalDias} día{totalDias > 1 ? 's' : ''}</strong> */}
+                <strong> Días</strong>
+                <small>{rutaGenerada.duracion || `${totalDias} día${totalDias > 1 ? 's' : ''}`}</small>
               </div>
             </div>
             <div className="summary-item">
@@ -95,13 +96,18 @@ export default function ItineraryList() {
               </div>
             </div>
           </div>
-          {!isMultiCiudades && (
+          {!isMultiCiudades && rutaGenerada.dias_totales <= 1 && (
             <div className="time-breakdown">
               <span className="breakdown-item">🎯 {tiempoVisitas} min visitas</span>
               <span className="breakdown-separator">+</span>
               <span className="breakdown-item">{getTransportIcon(stepC.transporte)} {tiempoTraslados} min traslados</span>
               <span className="breakdown-separator">=</span>
               <span className="breakdown-total">⏱️ {tiempoTotalCalculado} min total</span>
+            </div>
+          )}
+          {!isMultiCiudades && rutaGenerada.dias_totales > 1 && (
+            <div className="multi-day-summary">
+              <span className="summary-text">📊 {rutaGenerada.dias_totales} días • {rutaGenerada.actividades_por_dia || Math.ceil(rutaGenerada.ruta?.length / rutaGenerada.dias_totales)} actividades/día • {rutaGenerada.minutos_por_dia || Math.floor(tiempoVisitas / rutaGenerada.dias_totales)}min/día</span>
             </div>
           )}
         </div>
@@ -142,22 +148,71 @@ export default function ItineraryList() {
             </div>
           ))
         ) : (
-          rutaGenerada.ruta?.map(punto => (
-            <div key={punto.orden} className="itinerary-item">
-              <div className="item-order">
-                <span className="order-number">{punto.orden}</span>
-              </div>
-              <div className="item-content">
-                <h3 className="item-title">{punto.nombre}</h3>
-                <p className="item-description">{punto.descripcion}</p>
-                <div className="item-details">
-                  <span className="detail">⏱️ {punto.duracion_min} min</span>
-                  <span className="detail">💰 {punto.costo_estimado}</span>
-                  <span className="detail">🏷️ {punto.tipo}</span>
+          // Renderizar con separadores de días si es multi-día
+          rutaGenerada.dias_totales > 1 ? (
+            Array.from({ length: rutaGenerada.dias_totales }, (_, diaIndex) => {
+              const actividadesPorDia = rutaGenerada.actividades_por_dia || Math.ceil(rutaGenerada.ruta.length / rutaGenerada.dias_totales)
+              const inicioIndice = diaIndex * actividadesPorDia
+              const finIndice = Math.min((diaIndex + 1) * actividadesPorDia, rutaGenerada.ruta.length)
+              const actividadesDia = rutaGenerada.ruta.slice(inicioIndice, finIndice)
+              
+              const tiempoVisitasDia = actividadesDia.reduce((acc, punto) => acc + (punto.duracion_min || 0), 0)
+              const tiempoTrasladosDia = (actividadesDia.length - 1) * 15 // 15min entre actividades
+              const costoTotalDia = actividadesDia.reduce((acc, punto) => {
+                const costo = punto.costo_estimado?.replace(/[^\d]/g, '') || '0'
+                return acc + parseInt(costo)
+              }, 0)
+              
+              return (
+                <div key={`dia-${diaIndex + 1}`}>
+                  <div className="day-divider">
+                    <div className="day-title">
+                      <h3>📅 Día {diaIndex + 1}</h3>
+                      <div className="day-metrics">
+                        <span className="day-metric">🎯 {tiempoVisitasDia}min visitas</span>
+                        <span className="day-metric">{getTransportIcon(stepC.transporte)} {tiempoTrasladosDia}min traslados</span>
+                        <span className="day-metric">💰 ${costoTotalDia.toLocaleString()}</span>
+                      </div>
+                    </div>
+                  </div>
+                  {actividadesDia.map(punto => (
+                    <div key={punto.orden} className="itinerary-item">
+                      <div className="item-order">
+                        <span className="order-number">{punto.orden}</span>
+                      </div>
+                      <div className="item-content">
+                        <h3 className="item-title">{punto.nombre}</h3>
+                        <p className="item-description">{punto.descripcion}</p>
+                        <div className="item-details">
+                          <span className="detail">⏱️ {punto.duracion_min} min</span>
+                          <span className="detail">💰 {punto.costo_estimado}</span>
+                          <span className="detail">🏷️ {punto.tipo}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )
+            })
+          ) : (
+            // Tour de un solo día
+            rutaGenerada.ruta?.map(punto => (
+              <div key={punto.orden} className="itinerary-item">
+                <div className="item-order">
+                  <span className="order-number">{punto.orden}</span>
+                </div>
+                <div className="item-content">
+                  <h3 className="item-title">{punto.nombre}</h3>
+                  <p className="item-description">{punto.descripcion}</p>
+                  <div className="item-details">
+                    <span className="detail">⏱️ {punto.duracion_min} min</span>
+                    <span className="detail">💰 {punto.costo_estimado}</span>
+                    <span className="detail">🏷️ {punto.tipo}</span>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))
+            ))
+          )
         )}
       </div>
 

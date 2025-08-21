@@ -7,6 +7,7 @@ export default function MapView() {
   const dispatch = useDispatch()
   const mapRef = useRef(null)
   const [selectedPoint, setSelectedPoint] = useState(0)
+  const [selectedDay, setSelectedDay] = useState(1)
 
   if (!rutaGenerada) return null
   
@@ -134,25 +135,80 @@ export default function MapView() {
             </div>
           </div>
           <div className="route-points">
-            <h5>📍 Puntos de tu ruta:</h5>
-            <div className="points-list">
-              {allPoints.map((punto, index) => (
-                <div 
-                  key={punto.orden} 
-                  className={`route-point ${selectedPoint === index ? 'active' : ''}`}
-                  onClick={() => handlePointClick(index)}
-                >
-                  <span className="point-number">{punto.orden}</span>
-                  <div className="point-details">
-                    <strong>{punto.nombre}</strong>
-                    <small>{punto.tipo} • {punto.costo_estimado}</small>
-                  </div>
-                  <div className="point-action">
-                    🗺️
+            {rutaGenerada.dias_totales > 1 ? (
+              // Carousel de días para tours multi-día
+              <>
+                <div className="day-carousel-header">
+                  <h5>📍 Puntos por día:</h5>
+                  <div className="day-selector">
+                    {Array.from({ length: rutaGenerada.dias_totales }, (_, i) => (
+                      <button
+                        key={i + 1}
+                        onClick={() => setSelectedDay(i + 1)}
+                        className={`day-btn ${selectedDay === i + 1 ? 'active' : ''}`}
+                      >
+                        Día {i + 1}
+                      </button>
+                    ))}
                   </div>
                 </div>
-              ))}
-            </div>
+                <div className="day-points-container">
+                  {(() => {
+                    const actividadesPorDia = rutaGenerada.actividades_por_dia || 5
+                    const inicioIndice = (selectedDay - 1) * actividadesPorDia
+                    const finIndice = Math.min(selectedDay * actividadesPorDia, allPoints.length)
+                    const puntosDelDia = allPoints.slice(inicioIndice, finIndice)
+                    
+                    return (
+                      <div className="points-list">
+                        {puntosDelDia.map((punto, index) => {
+                          const globalIndex = inicioIndice + index
+                          return (
+                            <div 
+                              key={punto.orden} 
+                              className={`route-point ${selectedPoint === globalIndex ? 'active' : ''}`}
+                              onClick={() => handlePointClick(globalIndex)}
+                            >
+                              <span className="point-number">{punto.orden}</span>
+                              <div className="point-details">
+                                <strong>{punto.nombre}</strong>
+                                <small>{punto.tipo} • {punto.costo_estimado}</small>
+                              </div>
+                              <div className="point-action">
+                                🗺️
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )
+                  })()} 
+                </div>
+              </>
+            ) : (
+              // Vista normal para tours de un día
+              <>
+                <h5>📍 Puntos de tu ruta:</h5>
+                <div className="points-list">
+                  {allPoints.map((punto, index) => (
+                    <div 
+                      key={punto.orden} 
+                      className={`route-point ${selectedPoint === index ? 'active' : ''}`}
+                      onClick={() => handlePointClick(index)}
+                    >
+                      <span className="point-number">{punto.orden}</span>
+                      <div className="point-details">
+                        <strong>{punto.nombre}</strong>
+                        <small>{punto.tipo} • {punto.costo_estimado}</small>
+                      </div>
+                      <div className="point-action">
+                        🗺️
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
             <div className="map-navigation">
               <button 
                 onClick={() => setSelectedPoint(null)}
@@ -160,17 +216,46 @@ export default function MapView() {
               >
                 🌍 Vista General
               </button>
-              <div className="point-nav">
-                {allPoints.map((_, index) => (
-                  <button
-                    key={index}
-                    onClick={() => handlePointClick(index)}
-                    className={`point-nav-btn ${selectedPoint === index ? 'active' : ''}`}
-                  >
-                    {index + 1}
-                  </button>
-                ))}
-              </div>
+              {rutaGenerada.dias_totales > 1 ? (
+                // Navegación por días para tours multi-día
+                <div className="day-navigation">
+                  <span className="nav-label">Día {selectedDay}:</span>
+                  <div className="point-nav">
+                    {(() => {
+                      const actividadesPorDia = rutaGenerada.actividades_por_dia || 5
+                      const inicioIndice = (selectedDay - 1) * actividadesPorDia
+                      const finIndice = Math.min(selectedDay * actividadesPorDia, allPoints.length)
+                      const puntosDelDia = allPoints.slice(inicioIndice, finIndice)
+                      
+                      return puntosDelDia.map((_, localIndex) => {
+                        const globalIndex = inicioIndice + localIndex
+                        return (
+                          <button
+                            key={globalIndex}
+                            onClick={() => handlePointClick(globalIndex)}
+                            className={`point-nav-btn ${selectedPoint === globalIndex ? 'active' : ''}`}
+                          >
+                            {globalIndex + 1}
+                          </button>
+                        )
+                      })
+                    })()} 
+                  </div>
+                </div>
+              ) : (
+                // Navegación normal para tours de un día
+                <div className="point-nav">
+                  {allPoints.map((_, index) => (
+                    <button
+                      key={index}
+                      onClick={() => handlePointClick(index)}
+                      className={`point-nav-btn ${selectedPoint === index ? 'active' : ''}`}
+                    >
+                      {index + 1}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
           <div className="map-controls">
