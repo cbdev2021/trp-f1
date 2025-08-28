@@ -18,34 +18,47 @@ export default function ClickableMap({ center, onMapClick }) {
       script.onload = () => {
         const L = window.L
         
-        const map = L.map(mapRef.current).setView([center.lat, center.lon], 13)
+        const map = L.map(mapRef.current, {
+          zoomControl: false,
+          attributionControl: false
+        }).setView([center.lat, center.lon], 15)
         
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map)
+        // Usar tiles de Google Maps (Satellite + Roads)
+        L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+          maxZoom: 20,
+          subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+        }).addTo(map)
+        
+        // Controles personalizados estilo Google Maps
+        const zoomControl = L.control.zoom({
+          position: 'bottomright'
+        })
+        map.addControl(zoomControl)
         
         map.on('click', (e) => {
           if (markerRef.current) {
             map.removeLayer(markerRef.current)
           }
           
-          // Efecto de surgir de color
+          // Efecto ripple estilo Google Maps
           const ripple = L.circle([e.latlng.lat, e.latlng.lng], {
-            color: '#4285f4',
-            fillColor: '#4285f4',
-            fillOpacity: 0.3,
-            radius: 50,
-            className: 'click-ripple'
+            color: '#1a73e8',
+            fillColor: '#1a73e8',
+            fillOpacity: 0.2,
+            radius: 30,
+            weight: 2
           }).addTo(map)
           
-          setTimeout(() => map.removeLayer(ripple), 600)
+          setTimeout(() => map.removeLayer(ripple), 800)
           
-          // Crear marcador con animación
+          // Marcador estilo Google Maps
           setTimeout(() => {
             markerRef.current = L.marker([e.latlng.lat, e.latlng.lng], {
               icon: L.divIcon({
-                className: 'custom-marker',
-                html: '<div class="marker-pin"></div>',
-                iconSize: [30, 30],
-                iconAnchor: [15, 30]
+                className: 'google-marker',
+                html: '<div class="google-pin"></div>',
+                iconSize: [32, 40],
+                iconAnchor: [16, 40]
               })
             }).addTo(map)
           }, 200)
@@ -58,51 +71,84 @@ export default function ClickableMap({ center, onMapClick }) {
       
       document.head.appendChild(script)
       
-      // Agregar estilos CSS para el marcador
+      // Estilos Google Maps
       const style = document.createElement('style')
       style.textContent = `
-        .custom-marker {
+        .leaflet-container {
+          font-family: 'Google Sans', Roboto, Arial, sans-serif;
+          background: #e5e3df;
+        }
+        .leaflet-control-zoom {
+          border: none;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+          border-radius: 2px;
+        }
+        .leaflet-control-zoom a {
+          background: #fff;
+          color: #666;
+          border: none;
+          width: 40px;
+          height: 40px;
+          line-height: 40px;
+          font-size: 18px;
+          font-weight: 500;
+        }
+        .leaflet-control-zoom a:hover {
+          background: #f5f5f5;
+          color: #333;
+        }
+        .google-marker {
           background: none;
           border: none;
         }
-        .marker-pin {
-          width: 20px;
-          height: 20px;
-          border-radius: 50% 50% 50% 0;
+        .google-pin {
+          width: 22px;
+          height: 32px;
           background: #ea4335;
-          position: absolute;
+          border-radius: 50% 50% 50% 0;
           transform: rotate(-45deg);
-          left: 50%;
-          top: 50%;
-          margin: -15px 0 0 -10px;
-          animation: bounce 0.6s ease-out;
-          box-shadow: 0 2px 8px rgba(234, 67, 53, 0.4);
+          position: relative;
+          box-shadow: 0 3px 6px rgba(0,0,0,0.3);
+          animation: gmaps-drop 0.5s ease-out;
         }
-        .marker-pin:after {
+        .google-pin::after {
           content: '';
-          width: 8px;
-          height: 8px;
-          margin: 6px 0 0 6px;
+          width: 10px;
+          height: 10px;
           background: #fff;
-          position: absolute;
           border-radius: 50%;
+          position: absolute;
+          top: 6px;
+          left: 6px;
         }
-        .click-ripple {
-          animation: ripple-effect 0.6s ease-out;
+        .leaflet-popup-content-wrapper {
+          background: #fff;
+          border-radius: 8px;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.2);
         }
-        @keyframes bounce {
-          0% { transform: rotate(-45deg) scale(0); }
-          50% { transform: rotate(-45deg) scale(1.2); }
+        .leaflet-popup-tip {
+          background: #fff;
+        }
+        @keyframes gmaps-drop {
+          0% { transform: rotate(-45deg) translateY(-100px) scale(0.5); opacity: 0; }
+          50% { transform: rotate(-45deg) translateY(0) scale(1.1); opacity: 1; }
           100% { transform: rotate(-45deg) scale(1); }
-        }
-        @keyframes ripple-effect {
-          0% { transform: scale(0); opacity: 0.6; }
-          100% { transform: scale(3); opacity: 0; }
         }
       `
       document.head.appendChild(style)
     }
   }, [center, onMapClick])
 
-  return <div ref={mapRef} style={{ width: '100%', height: '300px', borderRadius: '12px' }} />
+  return (
+    <div 
+      ref={mapRef} 
+      style={{ 
+        width: '100%', 
+        height: '300px', 
+        borderRadius: '8px',
+        border: '1px solid #dadce0',
+        overflow: 'hidden'
+      }} 
+    />
+  )
 }
