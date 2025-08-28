@@ -142,7 +142,10 @@ const tourSlice = createSlice({
       // Eliminado - consolidado en stepC
     },
     stepE: { 
-      ubicacionInicio: null 
+      ubicacionInicio: null,
+      coordenadasSeleccionadas: null,
+      ciudadSeleccionada: null,
+      specificLocation: null
     },
     currentStep: 1,
     
@@ -194,6 +197,11 @@ const tourSlice = createSlice({
     },
     selectCity: (state, action) => {
       state.selectedCity = action.payload
+    },
+    setSelectedCoordinates: (state, action) => {
+      state.stepE.coordenadasSeleccionadas = action.payload.coordinates
+      state.stepE.ciudadSeleccionada = action.payload.city
+      state.stepE.specificLocation = action.payload.specificLocation
     },
     resetTour: (state) => {
       return {
@@ -335,6 +343,7 @@ export const {
   modificarPunto, 
   eliminarPunto,
   selectCity,
+  setSelectedCoordinates,
   resetTour 
 } = tourSlice.actions
 

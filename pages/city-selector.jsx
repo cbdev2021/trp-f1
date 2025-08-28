@@ -1,12 +1,13 @@
 import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/router'
 import { useSelector, useDispatch } from 'react-redux'
-import { loadNearbyCities, loadMoreCities, selectCity } from '../store/tourSlice'
+import { loadNearbyCities, loadMoreCities, selectCity, setSelectedCoordinates } from '../store/tourSlice'
+import ClickableMap from '../components/ClickableMap'
 
 export default function CitySelector() {
   const router = useRouter()
   const dispatch = useDispatch()
-  const { detectedCity, nearbyCities, selectedCity, citiesLoading } = useSelector(state => state.tour)
+  const { detectedCity, nearbyCities, selectedCity, citiesLoading, stepE } = useSelector(state => state.tour)
   const [currentIndex, setCurrentIndex] = useState(0)
   const previousCitiesLength = useRef(0)
 
@@ -39,6 +40,16 @@ export default function CitySelector() {
 
   const handleContinue = () => {
     router.push('/tour-planner')
+  }
+
+  const getContinueButtonText = () => {
+    if (stepE.coordenadasSeleccionadas && stepE.ciudadSeleccionada) {
+      return `Continuar con ${stepE.ciudadSeleccionada} →`
+    }
+    if (selectedCity) {
+      return `Crear tour en ${selectedCity.name} →`
+    }
+    return `Continuar con ${detectedCity.city} →`
   }
 
   const nextSlide = () => {
@@ -75,67 +86,80 @@ export default function CitySelector() {
     <div className="city-selector">
       <div className="map-section">
         <h2>📍 {selectedCity ? `Destino seleccionado: ${selectedCity.name}, ${selectedCity.country}` : `Tu ubicación: ${detectedCity.city}, ${detectedCity.country}`}</h2>
-        <div className="map-container">
-          <iframe
-            key={`${getMapCity().lat}-${getMapCity().lon}`}
-            src={`https://maps.google.com/maps?q=${getMapCity().lat},${getMapCity().lon}&hl=es&z=12&output=embed`}
-            width="100%"
-            height="300"
-            style={{ border: 'none', borderRadius: '12px' }}
-            title={`Mapa de ${getMapCity().name}`}
-            allowFullScreen
-          />
-        </div>
-      </div>
-
-      <div className="cities-section">
-        <h3>🌎 Explora ciudades cercanas o selecciona tu destino</h3>
+        <p>Haz clic en el mapa para seleccionar tu punto de inicio:</p>
+        <ClickableMap 
+          center={getMapCity()}
+          onMapClick={async (coords) => {
+            try {
+              const response = await fetch('/api/geocode', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ lat: coords.lat, lon: coords.lng })
+              })
+              const data = await response.json()
+              dispatch(setSelectedCoordinates({
+                coordinates: { lat: coords.lat, lon: coords.lng },
+                city: data.city || `${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}`,
+                specificLocation: data.specificLocation || ''
+              }))
+            } catch (error) {
+              dispatch(setSelectedCoordinates({
+                coordinates: { lat: coords.lat, lon: coords.lng },
+                city: `${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}`,
+                specificLocation: ''
+              }))
+            }
+          }}
+        />
         
-        <div className="carousel-container">
-          <button className="carousel-btn prev" onClick={prevSlide}>‹</button>
-          
-          <div className="cities-carousel">
-            {nearbyCities.slice(currentIndex, currentIndex + 4).map((city, index) => (
-              <div 
-                key={`${city.name}-${city.country}`}
-                className={`city-card ${selectedCity?.name === city.name ? 'selected' : ''}`}
-                onClick={() => handleCitySelect(city)}
-              >
-                <div className="city-flag" style={{fontSize: '2rem'}}>{city.flag || '🌍'}</div>
-                <h4>{city.name}</h4>
-                <p>{city.country}</p>
-                <span className="city-type">{city.type}</span>
-
-              </div>
-            ))}
-            
-            {citiesLoading && (
-              <div className="city-card loading">
-                <div className="loading-spinner">🔄</div>
-                <p>Cargando más ciudades...</p>
+        {stepE.coordenadasSeleccionadas && (
+          <div style={{ 
+            marginTop: '15px', 
+            padding: '15px', 
+            background: '#f8f9fa', 
+            borderRadius: '8px',
+            border: '1px solid #e9ecef'
+          }}>
+            <h4 style={{ color: '#27ae60', marginBottom: '10px' }}>
+              📍 Punto de partida seleccionado:
+            </h4>
+            <p style={{ margin: '5px 0', fontWeight: 'bold', color: '#2c3e50', fontSize: '1rem' }}>
+              🏢 {stepE.ciudadSeleccionada}
+            </p>
+            <p style={{ margin: '5px 0', color: '#7f8c8d', fontSize: '0.8rem', fontFamily: 'monospace' }}>
+              Coordenadas: {stepE.coordenadasSeleccionadas.lat.toFixed(6)}, {stepE.coordenadasSeleccionadas.lon.toFixed(6)}
+            </p>
+            {stepE.specificLocation && (
+              <div style={{ 
+                marginTop: '10px', 
+                padding: '10px', 
+                background: '#e8f4fd', 
+                borderRadius: '6px',
+                borderLeft: '3px solid #3498db'
+              }}>
+                <p style={{ margin: '0', color: '#2c3e50', fontSize: '0.9rem', fontWeight: '500' }}>
+                  📍 {stepE.specificLocation}
+                </p>
               </div>
             )}
           </div>
-          
-          <button className="carousel-btn next" onClick={nextSlide}>›</button>
-        </div>
+        )}
+      </div>
 
+      <div className="cities-section">
         <div className="selected-city">
-          {selectedCity ? (
-            <div className="selection-info">
+          <div className="selection-info">
+            {stepE.coordenadasSeleccionadas ? (
+              <p>✅ Punto de inicio seleccionado: <strong>{stepE.ciudadSeleccionada}</strong></p>
+            ) : selectedCity ? (
               <p>✅ Has seleccionado: <strong>{selectedCity.name}, {selectedCity.country}</strong></p>
-              <button className="continue-btn" onClick={handleContinue}>
-                Crear tour en {selectedCity.name} →
-              </button>
-            </div>
-          ) : (
-            <div className="selection-info">
-              <p>👆 Selecciona una ciudad para crear tu tour personalizado</p>
-              <button className="continue-btn default" onClick={handleContinue}>
-                Continuar con {detectedCity.city} →
-              </button>
-            </div>
-          )}
+            ) : (
+              <p>👆 Selecciona una ciudad o haz clic en el mapa para elegir tu punto de inicio</p>
+            )}
+            <button className="continue-btn" onClick={handleContinue}>
+              {getContinueButtonText()}
+            </button>
+          </div>
         </div>
       </div>
     </div>

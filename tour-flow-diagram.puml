@@ -1,0 +1,223 @@
+@startuml Tour Planner - Flujo Completo de Datos
+!theme plain
+skinparam backgroundColor #f8f9fa
+skinparam defaultFontSize 10
+skinparam packageStyle rectangle
+
+title Tour Planner - Flujo Completo de Datos de Entrada
+
+package "STEP A - Datos Básicos" as StepA {
+  class "Datos Básicos" as BasicData {
+    + demografia: string
+    + presupuesto: string  
+    + tipoRuta: string
+    + inicioTour: datetime
+    + finTour: datetime
+  }
+  
+  note right of BasicData
+    **Opciones Demografia:**
+    - solo, pareja, familia
+    - adulto_mayor, grupo_amigos
+    
+    **Opciones Presupuesto:**
+    - economico, medio, alto, premium
+    
+    **Opciones Tipo Ruta:**
+    - ciudad_local
+    - multi_ciudades
+    
+    **Validación:**
+    - Mínimo 2 horas de duración
+  end note
+}
+
+package "STEP B - Experiencia Deseada" as StepB {
+  class "Preferencias Experiencia" as ExperienceData {
+    + tipoExperiencia: string[]
+    + intensidad: string
+    + duracionPreferida: string
+  }
+  
+  note right of ExperienceData
+    **Tipos Experiencia (múltiple):**
+    - cultural, gastronomica
+    - aventura, relajacion
+    - nocturna, naturaleza
+    
+    **Intensidad:**
+    - relajado, moderado
+    - activo, intenso
+    
+    **Duración Preferida:**
+    - 2-3h, 4-5h, 6-7h
+    - 8-10h, flexible
+  end note
+}
+
+package "STEP C - Preferencias y Restricciones" as StepC {
+  class "Contexto y Restricciones" as ContextData {
+    + interesesEspecificos: string[]
+    + restricciones: string[]
+    + transporte: string
+    + preferenciaAmbiente: string
+  }
+  
+  note right of ContextData
+    **Intereses por Categoría:**
+    CULTURA: museos, arte_urbano, arquitectura, historia, librerias
+    GASTRONOMÍA: restaurantes, mercados, cafes, cocina_local
+    NATURALEZA: parques, miradores, jardines, senderos
+    ENTRETENIMIENTO: musica_vivo, vida_nocturna, shopping, eventos
+    
+    **Restricciones:**
+    - movilidad, ninos, alergias
+    - vegetariano, accesibilidad
+    
+    **Transporte:**
+    - caminata, bicicleta, transporte_publico
+    - vehiculo_propio, taxi_uber
+    
+    **Ambiente:**
+    - interior, exterior, mixto
+  end note
+}
+
+package "STEP D - Consolidado" as StepD {
+  note as StepDNote
+    **STEP D ELIMINADO**
+    Se consolidó en Step C
+    Auto-redirige al siguiente paso
+  end note
+}
+
+package "STEP E - Ubicación" as StepE {
+  class "Ubicación y Punto Inicio" as LocationData {
+    + ubicacionInicio: object
+    + coordenadasSeleccionadas: object
+    + ciudadSeleccionada: string
+    + specificLocation: object
+  }
+  
+  note right of LocationData
+    **Ubicación Inicio:**
+    - tipo: 'punto_referencia'
+    - direccion: string
+    - coordenadas: {lat, lon}
+    - descripcion: string
+    - categoria: string
+    
+    **Datos Automáticos:**
+    - detectedCity: {city, country, lat, lon}
+    - selectedCity: object
+    - startingPoints: array
+  end note
+}
+
+package "APIs y Servicios" as APIs {
+  class "Detección Automática" as AutoDetection {
+    + detectCity()
+    + loadNearbyCities()
+    + loadMoreCities()
+  }
+  
+  class "Puntos de Referencia" as ReferencePoints {
+    + loadReferencePoints()
+    + loadStartingPoints()
+    + loadMoreStartingPoints()
+  }
+  
+  class "Generación Tour" as TourGeneration {
+    + generateTour()
+    + Railway IA Agent
+  }
+}
+
+package "Datos Calculados" as Calculated {
+  class "Cálculos Automáticos" as Calculations {
+    + diasTotales: number
+    + actividadesPorDia: number
+    + totalActividades: number
+    + minutosPorDia: number
+    + tiempoPromedio: number
+  }
+  
+  note right of Calculations
+    **Lógica de Cálculo:**
+    - 8-10h → 5 actividades/día
+    - 6-7h → 6 actividades/día  
+    - 4-5h → 4 actividades/día
+    - 2-3h → 3 actividades/día
+    
+    **Tiempos Base:**
+    - cultura: 75min
+    - naturaleza: 60min
+    - gastronomia: 75min
+    - entretenimiento: 90min
+    - + 15min traslado c/u
+  end note
+}
+
+package "Salida Final" as Output {
+  class "Tour Generado" as GeneratedTour {
+    + titulo: string
+    + duracion: string
+    + ruta: array
+    + costo_total_estimado: string
+    + transporte_total_min: number
+    + consejos: string[]
+  }
+  
+  class "Punto de Ruta" as RoutePoint {
+    + orden: number
+    + nombre: string
+    + tipo: string
+    + tiempo: string
+    + descripcion: string
+    + coordenadas: {lat, lon}
+    + costo_estimado: string
+    + duracion_min: number
+  }
+}
+
+' Flujo de datos
+BasicData --> ExperienceData : "Validación OK"
+ExperienceData --> ContextData : "Preferencias definidas"
+ContextData --> StepD : "Contexto completo"
+StepD --> LocationData : "Auto-redirect"
+LocationData --> AutoDetection : "Detectar ciudad"
+AutoDetection --> ReferencePoints : "Cargar puntos"
+ReferencePoints --> LocationData : "Puntos disponibles"
+
+LocationData --> Calculations : "Calcular itinerario"
+BasicData --> Calculations : "Fechas y horarios"
+ExperienceData --> Calculations : "Duración preferida"
+
+Calculations --> TourGeneration : "Parámetros calculados"
+BasicData --> TourGeneration : "Datos básicos"
+ExperienceData --> TourGeneration : "Preferencias"
+ContextData --> TourGeneration : "Restricciones"
+LocationData --> TourGeneration : "Punto inicio"
+
+TourGeneration --> GeneratedTour : "IA Response"
+GeneratedTour --> RoutePoint : "Contiene múltiples"
+
+' Notas adicionales
+note bottom of TourGeneration
+  **Prompt a Railway IA:**
+  - Todos los datos consolidados
+  - Cálculos de actividades
+  - Punto inicio obligatorio
+  - Validaciones críticas
+  - JSON estructurado
+end note
+
+note bottom of GeneratedTour
+  **Validaciones Finales:**
+  - Mínimo actividades requeridas
+  - Primer punto = punto seleccionado
+  - Lugares reales y existentes
+  - Distribución por días correcta
+end note
+
+@enduml
