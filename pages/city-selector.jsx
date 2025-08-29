@@ -9,6 +9,7 @@ export default function CitySelector() {
   const dispatch = useDispatch()
   const { detectedCity, nearbyCities, selectedCity, citiesLoading, stepE } = useSelector(state => state.tour)
   const [currentIndex, setCurrentIndex] = useState(0)
+  const [loadingGeocode, setLoadingGeocode] = useState(false)
   const previousCitiesLength = useRef(0)
 
   useEffect(() => {
@@ -42,14 +43,23 @@ export default function CitySelector() {
     router.push('/tour-planner')
   }
 
+  const parseAddress = (address) => {
+    if (!address) return { country: '', city: '', locality: '', point: '' }
+    
+    const parts = address.split(', ')
+    const country = parts[parts.length - 1] || ''
+    const city = parts[parts.length - 2] || ''
+    const locality = parts[parts.length - 3] || ''
+    const point = parts.slice(0, -3).join(', ') || parts[0] || ''
+    
+    return { country, city, locality, point }
+  }
+
   const getContinueButtonText = () => {
-    if (stepE.coordenadasSeleccionadas && stepE.ciudadSeleccionada) {
-      return `Continuar con ${stepE.ciudadSeleccionada} →`
-    }
     if (selectedCity) {
-      return `Crear tour en ${selectedCity.name} →`
+      return `Continuar en ${selectedCity.name}`
     }
-    return `Continuar con ${detectedCity.city} →`
+    return `Continuar en ${detectedCity.city}`
   }
 
   const nextSlide = () => {
@@ -90,6 +100,7 @@ export default function CitySelector() {
         <ClickableMap 
           center={getMapCity()}
           onMapClick={async (coords) => {
+            setLoadingGeocode(true)
             try {
               const response = await fetch('/api/geocode', {
                 method: 'POST',
@@ -108,11 +119,31 @@ export default function CitySelector() {
                 city: `${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}`,
                 specificLocation: ''
               }))
+            } finally {
+              setLoadingGeocode(false)
             }
           }}
         />
         
-        {stepE.coordenadasSeleccionadas && (
+        {loadingGeocode && (
+          <div style={{ 
+            marginTop: '15px', 
+            padding: '15px', 
+            background: '#e3f2fd', 
+            borderRadius: '8px',
+            border: '1px solid #2196f3',
+            textAlign: 'left'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ fontSize: '1.2rem' }}>🔄</div>
+              <p style={{ margin: '0', color: '#1976d2', fontWeight: '500' }}>
+                Obteniendo información de la ubicación seleccionada...
+              </p>
+            </div>
+          </div>
+        )}
+        
+        {!loadingGeocode && stepE.coordenadasSeleccionadas && (
           <div style={{ 
             marginTop: '15px', 
             padding: '15px', 
@@ -120,13 +151,23 @@ export default function CitySelector() {
             borderRadius: '8px',
             border: '1px solid #e9ecef'
           }}>
-            <h4 style={{ color: '#27ae60', marginBottom: '10px' }}>
+            <h4 style={{ color: '#27ae60', marginBottom: '10px', textAlign: 'left' }}>
               📍 Punto de partida seleccionado:
             </h4>
-            <p style={{ margin: '5px 0', fontWeight: 'bold', color: '#2c3e50', fontSize: '1rem' }}>
-              🏢 {stepE.ciudadSeleccionada}
-            </p>
-            <p style={{ margin: '5px 0', color: '#7f8c8d', fontSize: '0.8rem', fontFamily: 'monospace' }}>
+            <div style={{ textAlign: 'left' }}>
+              {(() => {
+                const { country, city, locality, point } = parseAddress(stepE.ciudadSeleccionada)
+                return (
+                  <>
+                    {country && <div style={{ fontSize: '0.75rem', color: '#95a5a6', fontWeight: '500', marginBottom: '2px', textTransform: 'uppercase' }}>{country}</div>}
+                    {city && <div style={{ fontSize: '0.9rem', color: '#7f8c8d', fontWeight: '500', marginBottom: '4px' }}>{city}</div>}
+                    {locality && <div style={{ fontSize: '0.95rem', color: '#555', fontWeight: '500', marginBottom: '3px' }}>{locality}</div>}
+                    <div style={{ fontSize: '1rem', color: '#2c3e50', fontWeight: '600', lineHeight: '1.2' }}>🏢 {point}</div>
+                  </>
+                )
+              })()} 
+            </div>
+            <p style={{ margin: '5px 0', color: '#7f8c8d', fontSize: '0.8rem', fontFamily: 'monospace', textAlign: 'left' }}>
               Coordenadas: {stepE.coordenadasSeleccionadas.lat.toFixed(6)}, {stepE.coordenadasSeleccionadas.lon.toFixed(6)}
             </p>
             {stepE.specificLocation && (
@@ -149,13 +190,6 @@ export default function CitySelector() {
       <div className="cities-section">
         <div className="selected-city">
           <div className="selection-info">
-            {stepE.coordenadasSeleccionadas ? (
-              <p>✅ Punto de inicio seleccionado: <strong>{stepE.ciudadSeleccionada}</strong></p>
-            ) : selectedCity ? (
-              <p>✅ Has seleccionado: <strong>{selectedCity.name}, {selectedCity.country}</strong></p>
-            ) : (
-              <p>👆 Selecciona una ciudad o haz clic en el mapa para elegir tu punto de inicio</p>
-            )}
             <button className="continue-btn" onClick={handleContinue}>
               {getContinueButtonText()}
             </button>

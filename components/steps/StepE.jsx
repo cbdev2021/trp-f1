@@ -126,9 +126,12 @@ export default function StepE() {
                 onClick={() => handlePointSelect(point)}
               >
                 <div className="city-flag">{point.icono}</div>
-                <h4>{point.nombre}</h4>
-                <p>{point.tipo}</p>
-                <span className="distance">{point.direccion}</span>
+                <div className="location-hierarchy">
+                  <div className="country">{(selectedCity || detectedCity)?.country || 'Chile'}</div>
+                  <div className="city">{(selectedCity || detectedCity)?.name || (selectedCity || detectedCity)?.city || 'Santiago'}</div>
+                  <div className="point-name">{point.nombre}</div>
+                  <div className="point-type">{point.tipo}</div>
+                </div>
                 {point.coordenadas && (
                   <div className="coordinates">
                     📍 {point.coordenadas.lat.toFixed(4)}, {point.coordenadas.lon.toFixed(4)}
