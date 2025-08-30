@@ -189,8 +189,18 @@ export default function CitySelector() {
 
       <div className="cities-section">
         <div className="selected-city">
+          {!stepE.coordenadasSeleccionadas && (
+            <div className="selection-prompt">
+              <div className="prompt-icon">📍</div>
+              <p>Seleccione un punto de inicio para comenzar</p>
+            </div>
+          )}
           <div className="selection-info">
-            <button className="continue-btn" onClick={handleContinue}>
+            <button 
+              className="continue-btn" 
+              onClick={handleContinue}
+              disabled={!stepE.coordenadasSeleccionadas}
+            >
               {getContinueButtonText()}
             </button>
           </div>
