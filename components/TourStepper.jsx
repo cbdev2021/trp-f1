@@ -2,8 +2,6 @@ import { useSelector } from 'react-redux'
 import StepA from './steps/StepA'
 import StepB from './steps/StepB'
 import StepC from './steps/StepC'
-import StepD from './steps/StepD'
-import StepE from './steps/StepE'
 
 export default function TourStepper() {
   const { currentStep } = useSelector(state => state.tour)
@@ -11,12 +9,10 @@ export default function TourStepper() {
   const steps = [
     { component: <StepA />, title: "Datos Básicos" },
     { component: <StepB />, title: "Preferencias" },
-    { component: <StepC />, title: "Contexto" },
-    { component: <StepD />, title: "Intereses" },
-    { component: <StepE />, title: "Ubicación" }
+    { component: <StepC />, title: "Intereses y Restricciones" }
   ]
 
-  if (currentStep > 5) return null
+  if (currentStep > 3) return null
 
   return (
     <div className="stepper-container">

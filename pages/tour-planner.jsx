@@ -14,7 +14,7 @@ export default function TourPlanner() {
       </header>
 
       {/* Mostrar stepper si no hemos terminado */}
-      {currentStep <= 5 && (
+      {currentStep <= 3 && (
         <div className="stepper-section">
           <TourStepper />
         </div>

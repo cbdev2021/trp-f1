@@ -99,6 +99,53 @@ export const generateTour = createAsyncThunk(
   }
 )
 
+// Async thunk para generar tour desde StepC
+export const generateTourFromCurrentState = createAsyncThunk(
+  'tour/generateFromCurrentState',
+  async (_, { getState }) => {
+    const state = getState().tour
+    const targetCity = state.selectedCity || state.detectedCity
+    
+    // Usar la ubicación específica seleccionada por el usuario
+    const getStartingPoint = () => {
+      if (state.stepE.ciudadSeleccionada) {
+        // Extraer el nombre del lugar de la dirección
+        const address = state.stepE.ciudadSeleccionada
+        const parts = address.split(', ')
+        // Tomar la parte más específica (generalmente la primera)
+        return parts[0] || address
+      }
+      
+      // Fallback a puntos conocidos si no hay selección
+      const startingPoints = {
+        'Santiago': 'Plaza de Armas',
+        'Valparaíso': 'Plaza Victoria', 
+        'Viña del Mar': 'Reloj de Flores'
+      }
+      return startingPoints[targetCity?.city || targetCity?.name] || `Centro de ${targetCity?.city || targetCity?.name || 'Santiago'}`
+    }
+    
+    const userData = {
+      ...state.stepA,
+      ...state.stepB,
+      ...state.stepC,
+      ciudad: targetCity?.city || targetCity?.name || 'Santiago',
+      ubicacionInicio: getStartingPoint(),
+      coordenadasInicio: state.stepE.coordenadasSeleccionadas
+    }
+    
+    const response = await fetch('/api/tour-agent', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        userData,
+        sessionId: `user-${Date.now()}`
+      })
+    })
+    return response.json()
+  }
+)
+
 const tourSlice = createSlice({
   name: 'tour',
   initialState: {
@@ -145,7 +192,8 @@ const tourSlice = createSlice({
       ubicacionInicio: null,
       coordenadasSeleccionadas: null,
       ciudadSeleccionada: null,
-      specificLocation: null
+      specificLocation: null,
+      startingPointTitle: null
     },
     currentStep: 1,
     
@@ -172,7 +220,7 @@ const tourSlice = createSlice({
       state.stepE = { ...state.stepE, ...action.payload }
     },
     nextStep: (state) => {
-      if (state.currentStep < 5) state.currentStep += 1
+      if (state.currentStep < 3) state.currentStep += 1
     },
     prevStep: (state) => {
       if (state.currentStep > 1) state.currentStep -= 1
@@ -202,6 +250,7 @@ const tourSlice = createSlice({
       state.stepE.coordenadasSeleccionadas = action.payload.coordinates
       state.stepE.ciudadSeleccionada = action.payload.city
       state.stepE.specificLocation = action.payload.specificLocation
+      state.stepE.startingPointTitle = action.payload.startingPointTitle
     },
     resetTour: (state) => {
       return {
@@ -230,6 +279,11 @@ const tourSlice = createSlice({
         loading: false,
         error: null
       }
+    },
+    generateTourFromStepC: (state) => {
+      state.loading = true
+      state.error = null
+      state.currentStep = 6 // Saltar a resultados
     }
   },
   extraReducers: (builder) => {
@@ -255,6 +309,19 @@ const tourSlice = createSlice({
         state.currentStep = 6 // Mostrar resultados
       })
       .addCase(generateTour.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.error.message
+      })
+      .addCase(generateTourFromCurrentState.pending, (state) => {
+        state.loading = true
+        state.error = null
+        state.currentStep = 6 // Saltar a resultados
+      })
+      .addCase(generateTourFromCurrentState.fulfilled, (state, action) => {
+        state.loading = false
+        state.rutaGenerada = action.payload
+      })
+      .addCase(generateTourFromCurrentState.rejected, (state, action) => {
         state.loading = false
         state.error = action.error.message
       })
@@ -344,7 +411,8 @@ export const {
   eliminarPunto,
   selectCity,
   setSelectedCoordinates,
-  resetTour 
+  resetTour,
+  generateTourFromStepC 
 } = tourSlice.actions
 
 export default tourSlice.reducer

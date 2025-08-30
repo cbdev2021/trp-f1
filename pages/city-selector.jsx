@@ -108,16 +108,22 @@ export default function CitySelector() {
                 body: JSON.stringify({ lat: coords.lat, lon: coords.lng })
               })
               const data = await response.json()
+              const address = data.city || `${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}`
+              const startingPointTitle = data.specificLocation || (address.split(', ')[0]) || address
+              
               dispatch(setSelectedCoordinates({
                 coordinates: { lat: coords.lat, lon: coords.lng },
-                city: data.city || `${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}`,
-                specificLocation: data.specificLocation || ''
+                city: address,
+                specificLocation: data.specificLocation || '',
+                startingPointTitle
               }))
             } catch (error) {
+              const address = `${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}`
               dispatch(setSelectedCoordinates({
                 coordinates: { lat: coords.lat, lon: coords.lng },
-                city: `${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}`,
-                specificLocation: ''
+                city: address,
+                specificLocation: '',
+                startingPointTitle: address
               }))
             } finally {
               setLoadingGeocode(false)

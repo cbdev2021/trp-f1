@@ -3,8 +3,15 @@ import { useEffect, useRef, useState } from 'react'
 import { eliminarPunto } from '../store/tourSlice'
 
 export default function MapView() {
-  const { rutaGenerada, rutaAprobada } = useSelector(state => state.tour)
+  const { rutaGenerada, rutaAprobada, stepE } = useSelector(state => state.tour)
   const dispatch = useDispatch()
+  
+  const getPointTitle = (punto) => {
+    if (punto.orden === 1 && stepE.startingPointTitle) {
+      return stepE.startingPointTitle
+    }
+    return punto.nombre || punto.name || null
+  }
   const mapRef = useRef(null)
   const [selectedPoint, setSelectedPoint] = useState(0)
   const [selectedDay, setSelectedDay] = useState(1)
@@ -94,7 +101,7 @@ export default function MapView() {
                   <span className="point-number">{punto.orden}</span>
                 </div>
                 <div className="point-info">
-                  <h4>{punto.nombre}</h4>
+                  <h4>{getPointTitle(punto) || punto.nombre || punto.name || 'Punto de interés'}</h4>
                   {punto.dia && <p className="point-day">Día {punto.dia} - {punto.ciudad}</p>}
                   <p className="point-type">{punto.tipo}</p>
                   <p className="point-coords">
@@ -171,7 +178,7 @@ export default function MapView() {
                             >
                               <span className="point-number">{punto.orden}</span>
                               <div className="point-details">
-                                <strong>{punto.nombre}</strong>
+                                <strong>{getPointTitle(punto) || punto.nombre || punto.name || 'Punto de interés'}</strong>
                                 <small>{punto.tipo} • {punto.costo_estimado}</small>
                               </div>
                               <div className="point-action">
@@ -198,7 +205,7 @@ export default function MapView() {
                     >
                       <span className="point-number">{punto.orden}</span>
                       <div className="point-details">
-                        <strong>{punto.nombre}</strong>
+                        <strong>{getPointTitle(punto) || punto.nombre || punto.name || 'Punto de interés'}</strong>
                         <small>{punto.tipo} • {punto.costo_estimado}</small>
                       </div>
                       <div className="point-action">

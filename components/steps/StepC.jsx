@@ -1,5 +1,5 @@
 import { useSelector, useDispatch } from 'react-redux'
-import { updateStepC, nextStep, prevStep } from '../../store/tourSlice'
+import { updateStepC, prevStep, generateTourFromCurrentState } from '../../store/tourSlice'
 
 export default function StepC() {
   const dispatch = useDispatch()
@@ -40,11 +40,13 @@ export default function StepC() {
     dispatch(updateStepC({ restricciones: newRestricciones }))
   }
 
-  const handleNext = () => {
-    if (stepC.transporte && stepC.interesesEspecificos?.length > 0) {
-      dispatch(nextStep())
+  const handleGenerateTour = async () => {
+    if (isFormValid) {
+      dispatch(generateTourFromCurrentState())
     }
   }
+
+  const isFormValid = stepC.transporte && stepC.interesesEspecificos?.length > 0 && stepC.preferenciaAmbiente
 
   return (
     <div className="step-content">
@@ -122,11 +124,11 @@ export default function StepC() {
           Anterior
         </button>
         <button 
-          onClick={handleNext}
-          disabled={!stepC.transporte || !stepC.interesesEspecificos?.length}
-          className="next-btn"
+          onClick={handleGenerateTour}
+          disabled={!isFormValid}
+          className="generate-btn"
         >
-          Siguiente
+          🚀 Generar Tour
         </button>
       </div>
     </div>

@@ -3,9 +3,16 @@ import { useRouter } from 'next/router'
 import { aprobarRuta, resetTour } from '../store/tourSlice'
 
 export default function ItineraryList() {
-  const { rutaGenerada, rutaAprobada, selectedCity, detectedCity, stepC, stepA } = useSelector(state => state.tour)
+  const { rutaGenerada, rutaAprobada, selectedCity, detectedCity, stepC, stepA, stepE } = useSelector(state => state.tour)
   const dispatch = useDispatch()
   const router = useRouter()
+  
+  const getPointTitle = (punto) => {
+    if (punto.orden === 1 && stepE.startingPointTitle) {
+      return stepE.startingPointTitle
+    }
+    return punto.nombre || punto.name || null
+  }
   
   const targetCity = selectedCity || detectedCity
   const isMultiCiudades = rutaGenerada?.tipo_tour === 'multi_ciudades'
@@ -130,12 +137,12 @@ export default function ItineraryList() {
                     <span className="order-number">{punto.orden}</span>
                   </div>
                   <div className="item-content">
-                    <h4 className="item-title">{punto.nombre}</h4>
-                    <p className="item-description">{punto.descripcion}</p>
+                    <h4 className="item-title">{getPointTitle(punto) || punto.nombre || punto.name || 'Punto de interés'}</h4>
+                    <p className="item-description">{punto.descripcion || punto.description || 'Descripción no disponible'}</p>
                     <div className="item-details">
-                      <span className="detail">⏱️ {punto.duracion_min} min</span>
-                      <span className="detail">💰 {punto.costo_estimado}</span>
-                      <span className="detail">🏷️ {punto.tipo}</span>
+                      <span className="detail">⏱️ {punto.duracion_min || punto.duration || 30} min</span>
+                      <span className="detail">💰 {punto.costo_estimado || punto.cost || 'Gratis'}</span>
+                      <span className="detail">🏷️ {punto.tipo || punto.type || 'atracción'}</span>
                     </div>
                   </div>
                 </div>
@@ -181,12 +188,12 @@ export default function ItineraryList() {
                         <span className="order-number">{punto.orden}</span>
                       </div>
                       <div className="item-content">
-                        <h3 className="item-title">{punto.nombre}</h3>
-                        <p className="item-description">{punto.descripcion}</p>
+                        <h3 className="item-title">{getPointTitle(punto) || punto.nombre || punto.name || 'Punto de interés'}</h3>
+                        <p className="item-description">{punto.descripcion || punto.description || 'Descripción no disponible'}</p>
                         <div className="item-details">
-                          <span className="detail">⏱️ {punto.duracion_min} min</span>
-                          <span className="detail">💰 {punto.costo_estimado}</span>
-                          <span className="detail">🏷️ {punto.tipo}</span>
+                          <span className="detail">⏱️ {punto.duracion_min || punto.duration || 30} min</span>
+                          <span className="detail">💰 {punto.costo_estimado || punto.cost || 'Gratis'}</span>
+                          <span className="detail">🏷️ {punto.tipo || punto.type || 'atracción'}</span>
                         </div>
                       </div>
                     </div>
@@ -202,12 +209,12 @@ export default function ItineraryList() {
                   <span className="order-number">{punto.orden}</span>
                 </div>
                 <div className="item-content">
-                  <h3 className="item-title">{punto.nombre}</h3>
-                  <p className="item-description">{punto.descripcion}</p>
+                  <h3 className="item-title">{getPointTitle(punto) || punto.nombre || punto.name || 'Punto de interés'}</h3>
+                  <p className="item-description">{punto.descripcion || punto.description || 'Descripción no disponible'}</p>
                   <div className="item-details">
-                    <span className="detail">⏱️ {punto.duracion_min} min</span>
-                    <span className="detail">💰 {punto.costo_estimado}</span>
-                    <span className="detail">🏷️ {punto.tipo}</span>
+                    <span className="detail">⏱️ {punto.duracion_min || punto.duration || 30} min</span>
+                    <span className="detail">💰 {punto.costo_estimado || punto.cost || 'Gratis'}</span>
+                    <span className="detail">🏷️ {punto.tipo || punto.type || 'atracción'}</span>
                   </div>
                 </div>
               </div>
