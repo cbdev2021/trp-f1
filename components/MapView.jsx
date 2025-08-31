@@ -6,11 +6,17 @@ export default function MapView() {
   const { rutaGenerada, rutaAprobada, stepE } = useSelector(state => state.tour)
   const dispatch = useDispatch()
   
+  const cleanUndefinedText = (text) => {
+    if (!text) return null
+    return text.replace(/undefined\s*/gi, '').trim() || null
+  }
+  
   const getPointTitle = (punto) => {
     if (punto.orden === 1 && stepE.startingPointTitle) {
-      return stepE.startingPointTitle
+      return cleanUndefinedText(stepE.startingPointTitle) || stepE.startingPointTitle
     }
-    return punto.nombre || punto.name || null
+    const title = punto.nombre || punto.name || null
+    return cleanUndefinedText(title) || title
   }
   const mapRef = useRef(null)
   const [selectedPoint, setSelectedPoint] = useState(0)
@@ -101,7 +107,7 @@ export default function MapView() {
                   <span className="point-number">{punto.orden}</span>
                 </div>
                 <div className="point-info">
-                  <h4>{getPointTitle(punto) || punto.nombre || punto.name || 'Punto de interés'}</h4>
+                  <h4>{getPointTitle(punto) || cleanUndefinedText(punto.nombre || punto.name) || 'Punto de interés'}</h4>
                   {punto.dia && <p className="point-day">Día {punto.dia} - {punto.ciudad}</p>}
                   <p className="point-type">{punto.tipo}</p>
                   <p className="point-coords">
@@ -137,7 +143,7 @@ export default function MapView() {
               title="Mapa de la ruta turística"
             />
             <div className="map-overlay">
-              <p>📍 {selectedPoint !== null ? `Punto ${selectedPoint + 1}: ${allPoints[selectedPoint]?.nombre}` : `Vista general - ${allPoints.length} puntos`}</p>
+              <p>📍 {selectedPoint !== null ? `Punto ${selectedPoint + 1}: ${cleanUndefinedText(allPoints[selectedPoint]?.nombre) || allPoints[selectedPoint]?.nombre}` : `Vista general - ${allPoints.length} puntos`}</p>
               <small>{selectedPoint !== null ? 'Ubicación exacta del punto seleccionado' : 'Haz clic en los puntos de abajo para navegar'}</small>
             </div>
           </div>
@@ -178,7 +184,7 @@ export default function MapView() {
                             >
                               <span className="point-number">{punto.orden}</span>
                               <div className="point-details">
-                                <strong>{getPointTitle(punto) || punto.nombre || punto.name || 'Punto de interés'}</strong>
+                                <strong>{getPointTitle(punto) || cleanUndefinedText(punto.nombre || punto.name) || 'Punto de interés'}</strong>
                                 <small>{punto.tipo} • {punto.costo_estimado}</small>
                               </div>
                               <div className="point-action">
@@ -205,7 +211,7 @@ export default function MapView() {
                     >
                       <span className="point-number">{punto.orden}</span>
                       <div className="point-details">
-                        <strong>{getPointTitle(punto) || punto.nombre || punto.name || 'Punto de interés'}</strong>
+                        <strong>{getPointTitle(punto) || cleanUndefinedText(punto.nombre || punto.name) || 'Punto de interés'}</strong>
                         <small>{punto.tipo} • {punto.costo_estimado}</small>
                       </div>
                       <div className="point-action">

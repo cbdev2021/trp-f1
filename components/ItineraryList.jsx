@@ -7,11 +7,17 @@ export default function ItineraryList() {
   const dispatch = useDispatch()
   const router = useRouter()
   
+  const cleanUndefinedText = (text) => {
+    if (!text) return null
+    return text.replace(/undefined\s*/gi, '').trim() || null
+  }
+  
   const getPointTitle = (punto) => {
     if (punto.orden === 1 && stepE.startingPointTitle) {
-      return stepE.startingPointTitle
+      return cleanUndefinedText(stepE.startingPointTitle) || stepE.startingPointTitle
     }
-    return punto.nombre || punto.name || null
+    const title = punto.nombre || punto.name || null
+    return cleanUndefinedText(title) || title
   }
   
   const targetCity = selectedCity || detectedCity
@@ -137,8 +143,8 @@ export default function ItineraryList() {
                     <span className="order-number">{punto.orden}</span>
                   </div>
                   <div className="item-content">
-                    <h4 className="item-title">{getPointTitle(punto) || punto.nombre || punto.name || 'Punto de interés'}</h4>
-                    <p className="item-description">{punto.descripcion || punto.description || 'Descripción no disponible'}</p>
+                    <h4 className="item-title">{getPointTitle(punto) || cleanUndefinedText(punto.nombre || punto.name) || 'Punto de interés'}</h4>
+                    <p className="item-description">{cleanUndefinedText(punto.descripcion || punto.description) || 'Descripción no disponible'}</p>
                     <div className="item-details">
                       <span className="detail">⏱️ {punto.duracion_min || punto.duration || 30} min</span>
                       <span className="detail">💰 {punto.costo_estimado || punto.cost || 'Gratis'}</span>
@@ -188,8 +194,8 @@ export default function ItineraryList() {
                         <span className="order-number">{punto.orden}</span>
                       </div>
                       <div className="item-content">
-                        <h3 className="item-title">{getPointTitle(punto) || punto.nombre || punto.name || 'Punto de interés'}</h3>
-                        <p className="item-description">{punto.descripcion || punto.description || 'Descripción no disponible'}</p>
+                        <h3 className="item-title">{getPointTitle(punto) || cleanUndefinedText(punto.nombre || punto.name) || 'Punto de interés'}</h3>
+                        <p className="item-description">{cleanUndefinedText(punto.descripcion || punto.description) || 'Descripción no disponible'}</p>
                         <div className="item-details">
                           <span className="detail">⏱️ {punto.duracion_min || punto.duration || 30} min</span>
                           <span className="detail">💰 {punto.costo_estimado || punto.cost || 'Gratis'}</span>
@@ -209,8 +215,8 @@ export default function ItineraryList() {
                   <span className="order-number">{punto.orden}</span>
                 </div>
                 <div className="item-content">
-                  <h3 className="item-title">{getPointTitle(punto) || punto.nombre || punto.name || 'Punto de interés'}</h3>
-                  <p className="item-description">{punto.descripcion || punto.description || 'Descripción no disponible'}</p>
+                  <h3 className="item-title">{getPointTitle(punto) || cleanUndefinedText(punto.nombre || punto.name) || 'Punto de interés'}</h3>
+                  <p className="item-description">{cleanUndefinedText(punto.descripcion || punto.description) || 'Descripción no disponible'}</p>
                   <div className="item-details">
                     <span className="detail">⏱️ {punto.duracion_min || punto.duration || 30} min</span>
                     <span className="detail">💰 {punto.costo_estimado || punto.cost || 'Gratis'}</span>

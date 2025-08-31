@@ -189,14 +189,21 @@ JSON OBLIGATORIO:
   "consejos": ["Comenzar puntualmente en ${puntoInicio?.direccion}", "Respetar horarios"]
 }`
 
+    // Configurar timeout extendido para respuestas largas de IA
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 60000) // 60 segundos
+    
     const response = await fetch('https://primary-production-e9dc.up.railway.app/webhook/postman-webhook', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         chatInput: prompt,
         sessionId: sessionId || `tour-${Date.now()}`
-      })
+      }),
+      signal: controller.signal
     })
+    
+    clearTimeout(timeoutId)
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`)
@@ -219,8 +226,24 @@ JSON OBLIGATORIO:
           .replace(/[^}]*$/, '') // Remover texto después del último }
           .trim()
         
+        // Si no hay JSON válido, intentar extraer desde el final
+        if (!cleanOutput.startsWith('{')) {
+          const jsonMatch = data.output.match(/{[\s\S]*}/)
+          if (jsonMatch) {
+            cleanOutput = jsonMatch[0]
+          }
+        }
+        
         console.log('JSON limpio:', cleanOutput)
         tourData = JSON.parse(cleanOutput)
+        
+        // Limpiar nombres con undefined
+        if (tourData.ruta) {
+          tourData.ruta = tourData.ruta.map(punto => ({
+            ...punto,
+            nombre: punto.nombre ? punto.nombre.replace(/undefined\s*/gi, '').trim() || punto.nombre : punto.nombre
+          }))
+        }
         console.log('Tour parseado - puntos en ruta:', tourData.ruta?.length)
         
         // Validar si se generaron todas las actividades solicitadas
@@ -244,32 +267,23 @@ JSON OBLIGATORIO:
         }
         
       } else {
-        tourData = {
-          titulo: `Tour por ${ciudad?.city || ciudad?.name}`,
-          duracion: "1 día",
-          ruta: [{
-            orden: 1,
-            nombre: puntoInicio?.direccion || "Punto de inicio",
-            tipo: puntoInicio?.categoria || "punto de inicio",
-            tiempo: `${fechaHoraInicio.split('T')[1] || '09:00'}-${fechaHoraInicio.split('T')[1] || '09:30'}`,
-            descripcion: puntoInicio?.descripcion || "Punto de partida del recorrido",
-            coordenadas: { 
-              lat: puntoInicio?.coordenadas?.lat || ciudad?.lat || -33.4521, 
-              lon: puntoInicio?.coordenadas?.lon || ciudad?.lon || -70.6536 
-            },
-            costo_estimado: "$0",
-            duracion_min: 30
-          }],
-          costo_total_estimado: "$25000",
-          transporte_total_min: 45,
-          consejos: [`Comenzar puntualmente en ${puntoInicio?.direccion}`, "Llevar agua"]
-        }
+        console.warn('⚠️ No se recibió output de la IA, usando fallback')
+        throw new Error('No output received')
       }
     } catch (error) {
       console.error('Error parseando JSON:', error)
+      console.error('Respuesta original:', data.output)
+      
+      // Intentar recuperar datos parciales si es posible
+      if (data.output && data.output.includes('ruta')) {
+        console.log('Intentando recuperar datos parciales...')
+        // Aquí podrías agregar lógica para extraer datos parciales
+      }
+      
+      // Solo usar fallback si realmente no hay datos
       tourData = {
         titulo: `Tour por ${ciudad?.city || ciudad?.name}`,
-        duracion: "1 día",
+        duracion: `${itinerario.diasTotales} día(s)`,
         ruta: [{
           orden: 1,
           nombre: puntoInicio?.direccion || "Punto de inicio",
@@ -285,6 +299,9 @@ JSON OBLIGATORIO:
         }],
         costo_total_estimado: "$25000",
         transporte_total_min: 45,
+        dias_totales: itinerario.diasTotales,
+        actividades_por_dia: itinerario.actividadesPorDia,
+        minutos_por_dia: itinerario.minutosPorDia,
         consejos: [`Comenzar puntualmente en ${puntoInicio?.direccion}`, "Llevar agua"]
       }
     }
