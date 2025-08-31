@@ -149,7 +149,7 @@ export default function CitySelector() {
           </div>
         )}
         
-        {!loadingGeocode && stepE.coordenadasSeleccionadas && (
+        {/* {!loadingGeocode && stepE.coordenadasSeleccionadas && (
           <div style={{ 
             marginTop: '15px', 
             padding: '15px', 
@@ -190,7 +190,62 @@ export default function CitySelector() {
               </div>
             )}
           </div>
+        )} */}
+
+        {!loadingGeocode && stepE.coordenadasSeleccionadas && (
+          <div style={{ 
+            marginTop: '15px', 
+            padding: '15px', 
+            background: '#f8f9fa', 
+            borderRadius: '8px',
+            border: '1px solid #e9ecef'
+          }}>
+            <h4 style={{ color: '#27ae60', marginBottom: '10px', textAlign: 'left' }}>
+              {/* 📍 Formato Profesional: */}
+              📍 Punto de partida seleccionado:
+            </h4>
+            <div style={{ textAlign: 'left' }}>
+              <div style={{ fontSize: '1rem', color: '#2c3e50', fontWeight: '600', marginBottom: '5px' }}>
+                📍 {stepE.specificLocation || 'Ubicación seleccionada'}
+              </div>
+              <div style={{ fontSize: '0.9rem', color: '#555', fontWeight: '500', marginBottom: '3px' }}>
+                🏢 {stepE.ciudadSeleccionada}
+              </div>
+              <div style={{ fontSize: '0.85rem', color: '#7f8c8d', fontWeight: '500' }}>
+                📍 Santiago, Región Metropolitana
+              </div>
+            </div>
+            <p style={{ margin: '8px 0 0 0', color: '#7f8c8d', fontSize: '0.75rem', fontFamily: 'monospace', textAlign: 'left' }}>
+              {stepE.coordenadasSeleccionadas.lat.toFixed(6)}, {stepE.coordenadasSeleccionadas.lon.toFixed(6)}
+            </p>
+          </div>
         )}
+
+        {/* {!loadingGeocode && stepE.coordenadasSeleccionadas && (
+          <div style={{ 
+            marginTop: '15px', 
+            padding: '15px', 
+            background: '#f0f8ff', 
+            borderRadius: '8px',
+            border: '1px solid #4a90e2'
+          }}>
+            <h4 style={{ color: '#2c5aa0', marginBottom: '10px', textAlign: 'left' }}>
+              🏁 Formato Inicio de Tour:
+            </h4>
+            <div style={{ textAlign: 'left' }}>
+              <div style={{ fontSize: '1.1rem', color: '#2c3e50', fontWeight: '600', marginBottom: '4px' }}>
+                🏢 {stepE.specificLocation || 'Punto de Inicio'}
+              </div>
+              <div style={{ fontSize: '0.9rem', color: '#666', fontWeight: '500' }}>
+                📍 {(() => {
+                  const parts = stepE.ciudadSeleccionada?.split(', ') || []
+                  const locality = parts[parts.length - 3] || parts[0] || 'Santiago Centro'
+                  return locality
+                })()}, Santiago
+              </div>
+            </div>
+          </div>
+        )} */}
       </div>
 
       <div className="cities-section">
