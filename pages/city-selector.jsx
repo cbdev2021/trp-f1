@@ -18,7 +18,7 @@ export default function CitySelector() {
       router.push('/')
       return
     }
-    dispatch(loadNearbyCities(detectedCity))
+    // dispatch(loadNearbyCities(detectedCity)) // ← COMENTADO para evitar gasto de tokens
   }, [detectedCity, dispatch, router])
 
   // Efecto para manejar nuevas ciudades cargadas
