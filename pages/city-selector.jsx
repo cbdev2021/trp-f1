@@ -1,16 +1,14 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import { useSelector, useDispatch } from 'react-redux'
-import { loadNearbyCities, loadMoreCities, selectCity, setSelectedCoordinates } from '../store/tourSlice'
+import { selectCity, setSelectedCoordinates } from '../store/tourSlice'
 import ClickableMap from '../components/ClickableMap'
 
 export default function CitySelector() {
   const router = useRouter()
   const dispatch = useDispatch()
-  const { detectedCity, nearbyCities, selectedCity, citiesLoading, stepE } = useSelector(state => state.tour)
-  const [currentIndex, setCurrentIndex] = useState(0)
+  const { detectedCity, selectedCity, stepE } = useSelector(state => state.tour)
   const [loadingGeocode, setLoadingGeocode] = useState(false)
-  const previousCitiesLength = useRef(0)
 
   useEffect(() => {
     if (!detectedCity) {
@@ -18,18 +16,7 @@ export default function CitySelector() {
       router.push('/')
       return
     }
-    // dispatch(loadNearbyCities(detectedCity)) // ← COMENTADO para evitar gasto de tokens
-  }, [detectedCity, dispatch, router])
-
-  // Efecto para manejar nuevas ciudades cargadas
-  useEffect(() => {
-    if (nearbyCities.length > previousCitiesLength.current && previousCitiesLength.current > 0) {
-      // Posicionar para mostrar la última ciudad anterior como primera visible
-      const lastPreviousIndex = Math.max(0, previousCitiesLength.current - 1)
-      setCurrentIndex(lastPreviousIndex)
-    }
-    previousCitiesLength.current = nearbyCities.length
-  }, [nearbyCities.length])
+  }, [detectedCity, router])
 
   const handleCitySelect = (city) => {
     dispatch(selectCity(city))
@@ -62,20 +49,7 @@ export default function CitySelector() {
     return `Continuar en ${detectedCity.city}`
   }
 
-  const nextSlide = () => {
-    const maxIndex = Math.max(0, nearbyCities.length - 4)
-    if (currentIndex < maxIndex) {
-      setCurrentIndex(currentIndex + 1)
-    } else if (currentIndex === maxIndex && !citiesLoading) {
-      dispatch(loadMoreCities())
-    }
-  }
 
-  const prevSlide = () => {
-    if (currentIndex > 0) {
-      setCurrentIndex(currentIndex - 1)
-    }
-  }
 
   if (!detectedCity) {
     return (

@@ -9,79 +9,7 @@ export const detectCity = createAsyncThunk(
   }
 )
 
-// Async thunk para cargar ciudades cercanas
-export const loadNearbyCities = createAsyncThunk(
-  'tour/loadNearbyCities',
-  async (detectedCity) => {
-    const response = await fetch('/api/nearby-cities', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ detectedCity })
-    })
-    return response.json()
-  }
-)
 
-// Async thunk para cargar más ciudades con IA
-export const loadMoreCities = createAsyncThunk(
-  'tour/loadMoreCities',
-  async (_, { getState }) => {
-    const { nearbyCities, detectedCity } = getState().tour
-    const response = await fetch('/api/more-cities', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        detectedCity,
-        existingCities: nearbyCities.map(c => c.name)
-      })
-    })
-    return response.json()
-  }
-)
-
-// Async thunk para cargar puntos referenciales
-export const loadReferencePoints = createAsyncThunk(
-  'tour/loadReferencePoints',
-  async ({ city, userPreferences }) => {
-    const response = await fetch('/api/reference-points', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ city, userPreferences })
-    })
-    return response.json()
-  }
-)
-
-// Async thunk para cargar puntos de inicio
-export const loadStartingPoints = createAsyncThunk(
-  'tour/loadStartingPoints',
-  async ({ city, userPreferences }) => {
-    const response = await fetch('/api/starting-points', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ city, userPreferences })
-    })
-    return response.json()
-  }
-)
-
-// Async thunk para cargar más puntos de inicio
-export const loadMoreStartingPoints = createAsyncThunk(
-  'tour/loadMoreStartingPoints',
-  async (_, { getState }) => {
-    const { startingPoints, selectedCity, detectedCity, stepA, stepB, stepC, stepD } = getState().tour
-    const response = await fetch('/api/starting-points', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        city: selectedCity || detectedCity,
-        userPreferences: { ...stepA, ...stepB, ...stepC, ...stepD },
-        existingPoints: (startingPoints || []).map(p => p.nombre)
-      })
-    })
-    return response.json()
-  }
-)
 
 // Async thunk para generar tour
 export const generateTour = createAsyncThunk(
@@ -106,32 +34,20 @@ export const generateTourFromCurrentState = createAsyncThunk(
     const state = getState().tour
     const targetCity = state.selectedCity || state.detectedCity
     
-    // Usar la ubicación específica seleccionada por el usuario
-    const getStartingPoint = () => {
-      if (state.stepE.ciudadSeleccionada) {
-        // Extraer el nombre del lugar de la dirección
-        const address = state.stepE.ciudadSeleccionada
-        const parts = address.split(', ')
-        // Tomar la parte más específica (generalmente la primera)
-        return parts[0] || address
-      }
-      
-      // Fallback a puntos conocidos si no hay selección
-      const startingPoints = {
-        'Santiago': 'Plaza de Armas',
-        'Valparaíso': 'Plaza Victoria', 
-        'Viña del Mar': 'Reloj de Flores'
-      }
-      return startingPoints[targetCity?.city || targetCity?.name] || `Centro de ${targetCity?.city || targetCity?.name || 'Santiago'}`
-    }
-    
+
     const userData = {
       ...state.stepA,
       ...state.stepB,
       ...state.stepC,
-      ciudad: targetCity?.city || targetCity?.name || 'Santiago',
-      ubicacionInicio: getStartingPoint(),
-      coordenadasInicio: state.stepE.coordenadasSeleccionadas
+      selectedCity: state.selectedCity,
+      detectedCity: state.detectedCity,
+      ubicacionInicio: {
+        tipo: 'coordenadas',
+        direccion: state.stepE.specificLocation || state.stepE.ciudadSeleccionada || `${targetCity?.city || targetCity?.name || 'Santiago'}`,
+        coordenadas: state.stepE.coordenadasSeleccionadas,
+        descripcion: state.stepE.specificLocation || 'Punto seleccionado por el usuario',
+        categoria: 'punto_inicio'
+      }
     }
     
     const response = await fetch('/api/tour-agent', {
@@ -153,18 +69,8 @@ const tourSlice = createSlice({
     detectedCity: null,
     cityLoading: false,
     
-    // Ciudades cercanas y selección
-    nearbyCities: [],
+    // Ciudad seleccionada
     selectedCity: null,
-    citiesLoading: false,
-    
-    // Puntos referenciales
-    referencePoints: [],
-    referencePointsLoading: false,
-    
-    // Puntos de inicio
-    startingPoints: [],
-    startingPointsLoading: false,
     
     // Stepper data (5 pasos según documento)
     stepA: { 
@@ -185,9 +91,7 @@ const tourSlice = createSlice({
       transporte: '',
       preferenciaAmbiente: ''
     },
-    stepD: { 
-      // Eliminado - consolidado en stepC
-    },
+
     stepE: { 
       ubicacionInicio: null,
       coordenadasSeleccionadas: null,
@@ -213,9 +117,7 @@ const tourSlice = createSlice({
     updateStepC: (state, action) => {
       state.stepC = { ...state.stepC, ...action.payload }
     },
-    updateStepD: (state, action) => {
-      state.stepD = { ...state.stepD, ...action.payload }
-    },
+
     updateStepE: (state, action) => {
       state.stepE = { ...state.stepE, ...action.payload }
     },
@@ -325,76 +227,7 @@ const tourSlice = createSlice({
         state.loading = false
         state.error = action.error.message
       })
-      .addCase(loadNearbyCities.pending, (state) => {
-        state.citiesLoading = true
-      })
-      .addCase(loadNearbyCities.fulfilled, (state, action) => {
-        state.citiesLoading = false
-        // Agregar ciudad detectada como primer elemento
-        const detectedCityFormatted = {
-          name: state.detectedCity.city,
-          country: state.detectedCity.country,
-          lat: state.detectedCity.lat,
-          lon: state.detectedCity.lon,
-          flag: '📍',
-          type: '📍 Tu ubicación'
-        }
-        const cities = Array.isArray(action.payload) ? action.payload : []
-        state.nearbyCities = [detectedCityFormatted, ...cities]
-      })
-      .addCase(loadNearbyCities.rejected, (state) => {
-        state.citiesLoading = false
-      })
-      .addCase(loadMoreCities.pending, (state) => {
-        state.citiesLoading = true
-      })
-      .addCase(loadMoreCities.fulfilled, (state, action) => {
-        state.citiesLoading = false
-        const newCities = Array.isArray(action.payload) ? action.payload : []
-        state.nearbyCities = [...state.nearbyCities, ...newCities]
-      })
-      .addCase(loadMoreCities.rejected, (state) => {
-        state.citiesLoading = false
-      })
-      .addCase(loadReferencePoints.pending, (state) => {
-        state.referencePointsLoading = true
-      })
-      .addCase(loadReferencePoints.fulfilled, (state, action) => {
-        state.referencePointsLoading = false
-        const newPoints = action.payload.puntos || []
-        // Si hay puntos existentes, agregar los nuevos, sino reemplazar
-        if (state.referencePoints.length > 0) {
-          state.referencePoints = [...state.referencePoints, ...newPoints]
-        } else {
-          state.referencePoints = newPoints
-        }
-      })
-      .addCase(loadReferencePoints.rejected, (state) => {
-        state.referencePointsLoading = false
-        state.referencePoints = []
-      })
-      .addCase(loadStartingPoints.pending, (state) => {
-        state.startingPointsLoading = true
-      })
-      .addCase(loadStartingPoints.fulfilled, (state, action) => {
-        state.startingPointsLoading = false
-        state.startingPoints = Array.isArray(action.payload) ? action.payload : []
-      })
-      .addCase(loadStartingPoints.rejected, (state) => {
-        state.startingPointsLoading = false
-        state.startingPoints = []
-      })
-      .addCase(loadMoreStartingPoints.pending, (state) => {
-        state.startingPointsLoading = true
-      })
-      .addCase(loadMoreStartingPoints.fulfilled, (state, action) => {
-        state.startingPointsLoading = false
-        const newPoints = Array.isArray(action.payload) ? action.payload : []
-        state.startingPoints = [...state.startingPoints, ...newPoints]
-      })
-      .addCase(loadMoreStartingPoints.rejected, (state) => {
-        state.startingPointsLoading = false
-      })
+
   }
 })
 
@@ -402,7 +235,6 @@ export const {
   updateStepA, 
   updateStepB, 
   updateStepC, 
-  updateStepD, 
   updateStepE,
   nextStep, 
   prevStep, 
