@@ -111,7 +111,7 @@ export default function MapView() {
                   {punto.dia && <p className="point-day">Día {punto.dia} - {punto.ciudad}</p>}
                   <p className="point-type">{punto.tipo}</p>
                   <p className="point-coords">
-                    📍 {punto.coordenadas?.lat?.toFixed(4)}, {punto.coordenadas?.lon?.toFixed(4)}
+                    📍 {punto.coordenadas?.lat}, {punto.coordenadas?.lon}
                   </p>
                   <button 
                     onClick={() => dispatch(eliminarPunto(punto.orden))}
