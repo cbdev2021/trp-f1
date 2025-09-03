@@ -191,7 +191,8 @@ JSON OBLIGATORIO:
 
     // Configurar timeout extendido para respuestas largas de IA
     const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 60000) // 60 segundos
+    // const timeoutId = setTimeout(() => controller.abort(), 60000) // 60 segundos
+    const timeoutId = setTimeout(() => controller.abort(), 600000) // 60 segundos
     
     const response = await fetch('https://primary-production-e9dc.up.railway.app/webhook/postman-webhook', {
       method: 'POST',
