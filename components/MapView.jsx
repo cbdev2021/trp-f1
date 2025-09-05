@@ -65,13 +65,18 @@ export default function MapView() {
     if (allPoints.length === 0) return ''
     
     if (pointIndex !== null && allPoints[pointIndex]) {
-      // Mostrar punto específico usando el nombre del lugar para mayor precisión
       const point = allPoints[pointIndex]
-      return `https://maps.google.com/maps?q=${encodeURIComponent(point.nombre)}&hl=es&z=17&output=embed`
+      const ciudad = userData.selectedCity || userData.detectedCity
+      const ciudadNombre = ciudad?.city || ciudad?.name || 'Santiago'
+      
+      // Usar lugar_fisico si existe, sino usar nombre
+      const lugarBusqueda = point.lugar_fisico || point.nombre
+      const searchQuery = `${lugarBusqueda}, ${ciudadNombre}`
+      return `https://maps.google.com/maps?q=${encodeURIComponent(searchQuery)}&hl=es&z=17&output=embed`
     }
     
     // Vista general usando el nombre de la ciudad
-    const ciudad = allPoints[0] ? (userData.selectedCity || userData.detectedCity) : null
+    const ciudad = userData.selectedCity || userData.detectedCity
     if (ciudad) {
       return `https://maps.google.com/maps?q=${encodeURIComponent(ciudad.city || ciudad.name)}&hl=es&z=12&output=embed`
     }
