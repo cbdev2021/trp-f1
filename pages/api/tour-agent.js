@@ -194,7 +194,8 @@ JSON OBLIGATORIO:
     // const timeoutId = setTimeout(() => controller.abort(), 60000) // 60 segundos
     const timeoutId = setTimeout(() => controller.abort(), 600000) // 60 segundos
     
-    const response = await fetch('https://primary-production-e9dc.up.railway.app/webhook/postman-webhook', {
+    // const response = await fetch('https://primary-production-e9dc.up.railway.app/webhook/postman-webhook', {
+    const response = await fetch('https://n8n-ayym.onrender.com/webhook/postman-webhook', { 
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -238,11 +239,24 @@ JSON OBLIGATORIO:
         console.log('JSON limpio:', cleanOutput)
         tourData = JSON.parse(cleanOutput)
         
-        // Limpiar nombres con undefined
+        // Limpiar nombres con undefined y caracteres problemáticos
         if (tourData.ruta) {
           tourData.ruta = tourData.ruta.map(punto => ({
             ...punto,
-            nombre: punto.nombre ? punto.nombre.replace(/undefined\s*/gi, '').trim() || punto.nombre : punto.nombre
+            nombre: punto.nombre ? 
+              punto.nombre
+                .replace(/undefined\s*/gi, '')
+                .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // Remover caracteres de control
+                .replace(/\s+/g, ' ') // Normalizar espacios
+                .trim() || 'Punto de interés' 
+              : 'Punto de interés',
+            descripcion: punto.descripcion ?
+              punto.descripcion
+                .replace(/undefined\s*/gi, '')
+                .replace(/[\u0000-\u001F\u007F-\u009F]/g, '')
+                .replace(/\s+/g, ' ')
+                .trim() || 'Descripción no disponible'
+              : 'Descripción no disponible'
           }))
         }
         console.log('Tour parseado - puntos en ruta:', tourData.ruta?.length)
