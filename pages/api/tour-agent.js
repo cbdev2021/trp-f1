@@ -14,6 +14,20 @@ export default async function handler(req, res) {
     
     const ciudad = userData.selectedCity || userData.detectedCity
     const puntoInicio = userData.ubicacionInicio
+    
+    // Log para verificar qué ciudad se está usando
+    console.log('🏙️  CIUDAD PARA TOUR:', {
+      ciudadSeleccionada: userData.selectedCity,
+      ciudadDetectada: userData.detectedCity,
+      ciudadFinal: ciudad,
+      nombreCiudad: ciudad?.city || ciudad?.name,
+      pais: ciudad?.country
+    })
+    
+    // Log del prompt que se envía a la IA
+    console.log('🤖 PROMPT ENVIADO A LA IA:')
+    console.log('CIUDAD EN PROMPT:', ciudad?.city || ciudad?.name)
+    console.log('PAÍS EN PROMPT:', ciudad?.country)
 
     // Calcular días y actividades por día
     const calcularItinerarioCompleto = () => {
@@ -117,50 +131,67 @@ export default async function handler(req, res) {
     const criticalPromptModifiers = generateCriticalPrompt(userData)
     console.log('Modificadores críticos generados:', criticalPromptModifiers)
     
-    const prompt = `IMPORTANTE: Debes crear una ruta turística que COMIENCE OBLIGATORIAMENTE en el punto seleccionado por el usuario.
+    const cityName = ciudad?.city || ciudad?.name || 'Ciudad'
+    const countryName = ciudad?.country || 'País'
+    
+    const prompt = `You are a professional travel guide creating a tour for ${cityName.toUpperCase()}, ${countryName.toUpperCase()}.
 
-DATOS DEL TOUR:
-- CIUDAD: ${ciudad?.city || ciudad?.name}, ${ciudad?.country}
-- PUNTO DE INICIO OBLIGATORIO: ${puntoInicio?.direccion}
-- COORDENADAS INICIO: ${puntoInicio?.coordenadas?.lat || ciudad?.lat}, ${puntoInicio?.coordenadas?.lon || ciudad?.lon}
-- FECHA/HORA: ${fechaHoraInicio} hasta ${fechaHoraFin}
-- DURACIÓN: ${itinerario.diasTotales} días, ${itinerario.horasDiarias} diarias
-- PREFERENCIAS: ${criticalPromptModifiers}
-- TRANSPORTE: ${userData.transporte}
+🌍 CRITICAL: This tour is for ${cityName.toUpperCase()}, ${countryName.toUpperCase()} ONLY!
+🚫 DO NOT mention Santiago, Chile, or any Chilean locations unless the city IS Santiago!
+🚫 DO NOT use generic names like "Local Museum" or "Central Plaza"
+✅ USE ONLY real, specific places that exist in ${cityName}, ${countryName}
 
-ATENCIÓN: ESTO ES OBLIGATORIO Y NO NEGOCIABLE:
+TOUR DETAILS:
+- TARGET CITY: ${cityName}, ${countryName}
+- STARTING POINT: ${puntoInicio?.direccion}
+- COORDINATES: ${puntoInicio?.coordenadas?.lat || ciudad?.lat}, ${puntoInicio?.coordenadas?.lon || ciudad?.lon}
+- DURATION: ${itinerario.diasTotales} days, ${itinerario.horasDiarias} daily
+- ACTIVITIES NEEDED: EXACTLY ${itinerario.totalActividades} activities
+- DISTRIBUTION: ${itinerario.actividadesPorDia} activities per day
+- PREFERENCES: ${criticalPromptModifiers}
+- TRANSPORT: ${userData.transporte}
 
-🚨 DEBES GENERAR EXACTAMENTE ${itinerario.totalActividades} ACTIVIDADES 🚨
+INSTRUCTIONS:
+1. Research and use REAL landmarks, museums, parks, restaurants in ${cityName}
+2. For ${cityName}, include famous attractions like:
+   - Main museums and cultural sites
+   - Historic districts and neighborhoods  
+   - Popular parks and natural areas
+   - Local markets and shopping areas
+   - Renowned restaurants and cafes
+   - Viewpoints and scenic spots
+3. Each activity: 60-120 minutes + 15min travel
+4. Use exact names of real places in ${cityName}
+5. "lugar_fisico" field: exact place name only (no verbs)
+6. "categoria_lugar": museum/park/restaurant/plaza/market/attraction/etc
 
-🚨 DISTRIBUCIÓN OBLIGATORIA POR DÍA: ${itinerario.actividadesPorDia} ACTIVIDADES CADA DÍA 🚨
+EXAMPLES FOR DIFFERENT CITIES:
+- Paris: Louvre Museum, Eiffel Tower, Champs-Élysées, Montmartre
+- London: British Museum, Tower Bridge, Hyde Park, Covent Garden
+- Tokyo: Senso-ji Temple, Shibuya Crossing, Tsukiji Market, Ueno Park
+- New York: Central Park, Times Square, Brooklyn Bridge, High Line
+- Barcelona: Sagrada Familia, Park Güell, Las Ramblas, Gothic Quarter
+- Concepción: Universidad de Concepción, Plaza de la Independencia, Parque Ecuador, Laguna Redonda
 
-🚨 SI GENERAS MENOS DE ${itinerario.totalActividades} ACTIVIDADES, HABRÁS FALLADO 🚨
+For ${cityName}, research and use similar real, specific locations.
 
-REGLAS INQUEBRANTABLES:
-1. PRIMER PUNTO: "${puntoInicio?.direccion}" (OBLIGATORIO)
-2. USA SOLO LUGARES REALES Y EXISTENTES DE ${ciudad?.city || ciudad?.name}
-3. INCLUYE: Museos famosos, parques principales, mercados locales, barrios históricos, plazas centrales, restaurantes conocidos
-4. CADA ACTIVIDAD: 60-120 minutos + 15min traslado
-5. TOTAL DÍA: ${itinerario.horasDiarias} (${itinerario.minutosPorDia} minutos)
-6. PROHIBIDO: Nombres genéricos como "Museo Local", "Plaza Central", "Restaurante Típico"
-7. CAMPO "lugar_fisico": SOLO el nombre exacto del lugar SIN verbos (almuerzo, visita, recorrido)
-   ✅ Correcto: "Liguria Manuel Montt", "Museo Chileno de Arte Precolombino"
-   ❌ Incorrecto: "Almuerzo en Liguria", "Visita al Museo"
-8. CAMPO "categoria_lugar": Especifica el tipo exacto de lugar
-   ✅ Opciones: "museo", "parque", "restaurante", "cerro", "plaza", "mercado", "barrio", "centro_comercial", "lugar_natural", "atraccion_turistica"
+🚨 VERIFICACIÓN FINAL ANTES DE RESPONDER 🚨
+- ¿Todos los lugares están en ${(ciudad?.city || ciudad?.name)?.toUpperCase()}? ✅
+- ¿No mencioné Santiago ni lugares de Santiago? ✅
+- ¿Generé exactamente ${itinerario.totalActividades} actividades? ✅
+- ¿Usé solo lugares reales de ${(ciudad?.city || ciudad?.name)?.toUpperCase()}? ✅
 
-🚨 RESPONDE CON ${itinerario.totalActividades} ACTIVIDADES DISTRIBUIDAS ASÍ: 🚨
+🔥 DISTRIBUCIÓN OBLIGATORIA:
+🔥 DÍA 1: EXACTAMENTE ${itinerario.actividadesPorDia} ACTIVIDADES DE ${(ciudad?.city || ciudad?.name)?.toUpperCase()}
+🔥 DÍA 2: EXACTAMENTE ${itinerario.actividadesPorDia} ACTIVIDADES DE ${(ciudad?.city || ciudad?.name)?.toUpperCase()}
+🔥 DÍA 3: EXACTAMENTE ${itinerario.actividadesPorDia} ACTIVIDADES DE ${(ciudad?.city || ciudad?.name)?.toUpperCase()}
+${itinerario.diasTotales > 3 ? `🔥 DÍA 4: EXACTAMENTE ${itinerario.actividadesPorDia} ACTIVIDADES DE ${(ciudad?.city || ciudad?.name)?.toUpperCase()}` : ''}
 
-🔥 DÍA 1: EXACTAMENTE ${itinerario.actividadesPorDia} ACTIVIDADES
-🔥 DÍA 2: EXACTAMENTE ${itinerario.actividadesPorDia} ACTIVIDADES  
-🔥 DÍA 3: EXACTAMENTE ${itinerario.actividadesPorDia} ACTIVIDADES
-${itinerario.diasTotales > 3 ? `🔥 DÍA 4: EXACTAMENTE ${itinerario.actividadesPorDia} ACTIVIDADES` : ''}
-
-🚨 TOTAL: ${itinerario.totalActividades} ACTIVIDADES (NO MENOS) 🚨
+🚨 TOTAL: ${itinerario.totalActividades} ACTIVIDADES TODAS EN ${(ciudad?.city || ciudad?.name)?.toUpperCase()} 🚨
 
 JSON OBLIGATORIO:
 {
-  "titulo": "Tour por ${ciudad?.city || ciudad?.name}",
+  "titulo": "Tour por ${cityName}",
   "duracion": "${Math.ceil((new Date(fechaHoraFin) - new Date(fechaHoraInicio)) / (1000 * 60 * 60 * 24))} día(s)",
   "ruta": [
     {
@@ -170,7 +201,7 @@ JSON OBLIGATORIO:
       "tipo": "${puntoInicio?.categoria || 'punto de inicio'}",
       "tiempo": "${fechaHoraInicio.split('T')[1] || '09:00'}-${fechaHoraInicio.split('T')[1] || '09:30'}",
       "descripcion": "${puntoInicio?.descripcion || 'Punto de partida del recorrido'}",
-      "coordenadas": {"lat": ${puntoInicio?.coordenadas?.lat || ciudad?.lat || -33.4521}, "lon": ${puntoInicio?.coordenadas?.lon || ciudad?.lon || -70.6536}},
+      "coordenadas": {"lat": ${puntoInicio?.coordenadas?.lat || ciudad?.lat}, "lon": ${puntoInicio?.coordenadas?.lon || ciudad?.lon}},
       "costo_estimado": "$0",
       "duracion_min": 30
     }${Array.from({length: itinerario.totalActividades - 1}, (_, i) => `,
@@ -203,6 +234,8 @@ JSON OBLIGATORIO:
     const timeoutId = setTimeout(() => controller.abort(), 600000) // 60 segundos
     
     // const response = await fetch('https://primary-production-e9dc.up.railway.app/webhook/postman-webhook', {
+    console.log('🚀 ENVIANDO A IA - CIUDAD:', ciudad?.city || ciudad?.name)
+    
     const response = await fetch('https://n8n-ayym.onrender.com/webhook/postman-webhook', { 
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -276,11 +309,22 @@ JSON OBLIGATORIO:
               : 'Descripción no disponible'
           }))
           
-          // Filtrar lugares problemáticos
+          // Filtrar lugares problemáticos y lugares de otras ciudades
           const lugaresProblematicos = [
             'Casa Pilar', 'Peña Flamenco', 'Arte Flamenco', 'Coquinaria',
             'Barrio El Golf y Plaza Perú', 'Ambrosía Bistro' // Restaurantes ficticios
           ]
+          
+          // Lugares específicos de Santiago que NO deben aparecer en otras ciudades
+          const lugaresSantiago = [
+            'Cerro San Cristóbal', 'Cerro Santa Lucía', 'Plaza de Armas', 'La Moneda',
+            'Mercado Central', 'Barrio Lastarria', 'Barrio Bellavista', 'Parque Forestal',
+            'Museo Chileno de Arte Precolombino', 'Palacio de La Moneda', 'Catedral Metropolitana',
+            'Liguria', 'Patio Bellavista', 'Centro Costanera', 'Mall Plaza'
+          ]
+          
+          const ciudadActual = (ciudad?.city || ciudad?.name || '').toLowerCase()
+          const esSantiago = ciudadActual.includes('santiago')
           
           // Limpiar nombres compuestos problemáticos
           tourData.ruta = tourData.ruta.map(punto => ({
@@ -389,15 +433,25 @@ JSON OBLIGATORIO:
             return R * c
           }
           
-          // Filtrar lugares problemáticos primero
+          // Filtrar lugares problemáticos y lugares de otras ciudades
           tourData.ruta = tourData.ruta.filter(punto => {
             const esProblematico = lugaresProblematicos.some(lugar => 
               punto.lugar_fisico?.toLowerCase().includes(lugar.toLowerCase())
             )
+            
+            // Si NO es Santiago, filtrar lugares específicos de Santiago
+            const esLugarDeSantiago = !esSantiago && lugaresSantiago.some(lugar => 
+              punto.lugar_fisico?.toLowerCase().includes(lugar.toLowerCase())
+            )
+            
             if (esProblematico) {
               console.warn(`🚫 Lugar filtrado: ${punto.lugar_fisico} - En lista problemática`)
             }
-            return !esProblematico
+            if (esLugarDeSantiago) {
+              console.warn(`🚫 Lugar de Santiago filtrado: ${punto.lugar_fisico} - No corresponde a ${ciudadActual}`)
+            }
+            
+            return !esProblematico && !esLugarDeSantiago
           })
           
           // Validar cada lugar restante con Google Places API
@@ -411,7 +465,7 @@ JSON OBLIGATORIO:
             const isValid = await validatePlace(
               punto.lugar_fisico, 
               ciudad?.city || ciudad?.name,
-              { lat: ciudad?.lat || -33.4521, lon: ciudad?.lon || -70.6536 }
+              { lat: ciudad?.lat, lon: ciudad?.lon }
             )
             if (isValid) {
               validatedRuta.push(punto)
@@ -471,8 +525,8 @@ JSON OBLIGATORIO:
           tiempo: `${fechaHoraInicio.split('T')[1] || '09:00'}-${fechaHoraInicio.split('T')[1] || '09:30'}`,
           descripcion: puntoInicio?.descripcion || "Punto de partida del recorrido",
           coordenadas: { 
-            lat: puntoInicio?.coordenadas?.lat || ciudad?.lat || -33.4521, 
-            lon: puntoInicio?.coordenadas?.lon || ciudad?.lon || -70.6536 
+            lat: puntoInicio?.coordenadas?.lat || ciudad?.lat, 
+            lon: puntoInicio?.coordenadas?.lon || ciudad?.lon 
           },
           costo_estimado: "$0",
           duracion_min: 30

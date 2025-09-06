@@ -43,9 +43,19 @@ export default function CitySelector() {
   }
 
   const getContinueButtonText = () => {
+    // Si hay un punto seleccionado, extraer la ciudad de las coordenadas
+    if (stepE.coordenadasSeleccionadas && stepE.ciudadSeleccionada) {
+      const parts = stepE.ciudadSeleccionada.split(', ')
+      const cityFromPoint = parts[parts.length - 2] || parts[parts.length - 1] || parts[0]
+      return `Continuar en ${cityFromPoint}`
+    }
+    
+    // Si hay ciudad seleccionada manualmente
     if (selectedCity) {
       return `Continuar en ${selectedCity.name}`
     }
+    
+    // Fallback a ciudad detectada
     return `Continuar en ${detectedCity.city}`
   }
 
@@ -85,6 +95,24 @@ export default function CitySelector() {
               const address = data.city || `${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}`
               const startingPointTitle = data.specificLocation || (address.split(', ')[0]) || address
               
+              // Extraer ciudad del address para usarla en el tour
+              const parts = address.split(', ')
+              const cityFromAddress = parts[parts.length - 2] || parts[parts.length - 1] || parts[0]
+              const countryFromAddress = parts[parts.length - 1] || 'País'
+              
+              // Crear objeto de ciudad basado en el punto seleccionado
+              const cityFromPoint = {
+                city: cityFromAddress,
+                name: cityFromAddress,
+                country: countryFromAddress,
+                lat: coords.lat,
+                lon: coords.lng
+              }
+              
+              // Actualizar la ciudad seleccionada basada en el punto
+              console.log('🏙️ CIUDAD EXTRAÍDA DEL PUNTO:', cityFromPoint)
+              dispatch(selectCity(cityFromPoint))
+              
               dispatch(setSelectedCoordinates({
                 coordinates: { lat: coords.lat, lon: coords.lng },
                 city: address,
@@ -93,6 +121,19 @@ export default function CitySelector() {
               }))
             } catch (error) {
               const address = `${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}`
+              
+              // Crear ciudad genérica para coordenadas sin geocoding
+              const genericCity = {
+                city: 'Ubicación seleccionada',
+                name: 'Ubicación seleccionada', 
+                country: 'País',
+                lat: coords.lat,
+                lon: coords.lng
+              }
+              
+              console.log('🏙️ CIUDAD GENÉRICA:', genericCity)
+              dispatch(selectCity(genericCity))
+              
               dispatch(setSelectedCoordinates({
                 coordinates: { lat: coords.lat, lon: coords.lng },
                 city: address,
@@ -186,7 +227,12 @@ export default function CitySelector() {
                 🏢 {stepE.ciudadSeleccionada}
               </div>
               <div style={{ fontSize: '0.85rem', color: '#7f8c8d', fontWeight: '500' }}>
-                📍 Santiago, Región Metropolitana
+                📍 {(() => {
+                  const parts = stepE.ciudadSeleccionada?.split(', ') || []
+                  const city = parts[parts.length - 2] || 'Ciudad'
+                  const region = parts[parts.length - 1] || 'Región'
+                  return `${city}, ${region}`
+                })()}
               </div>
             </div>
             <p style={{ margin: '8px 0 0 0', color: '#7f8c8d', fontSize: '0.75rem', fontFamily: 'monospace', textAlign: 'left' }}>
