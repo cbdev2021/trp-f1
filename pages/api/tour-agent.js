@@ -143,6 +143,11 @@ REGLAS INQUEBRANTABLES:
 4. CADA ACTIVIDAD: 60-120 minutos + 15min traslado
 5. TOTAL DÍA: ${itinerario.horasDiarias} (${itinerario.minutosPorDia} minutos)
 6. PROHIBIDO: Nombres genéricos como "Museo Local", "Plaza Central", "Restaurante Típico"
+7. CAMPO "lugar_fisico": SOLO el nombre exacto del lugar SIN verbos (almuerzo, visita, recorrido)
+   ✅ Correcto: "Liguria Manuel Montt", "Museo Chileno de Arte Precolombino"
+   ❌ Incorrecto: "Almuerzo en Liguria", "Visita al Museo"
+8. CAMPO "categoria_lugar": Especifica el tipo exacto de lugar
+   ✅ Opciones: "museo", "parque", "restaurante", "cerro", "plaza", "mercado", "barrio", "centro_comercial", "lugar_natural", "atraccion_turistica"
 
 🚨 RESPONDE CON ${itinerario.totalActividades} ACTIVIDADES DISTRIBUIDAS ASÍ: 🚨
 
@@ -161,6 +166,7 @@ JSON OBLIGATORIO:
     {
       "orden": 1,
       "nombre": "${puntoInicio?.direccion || 'Punto de Inicio'}",
+      "lugar_fisico": "${puntoInicio?.direccion || 'Punto de Inicio'}",
       "tipo": "${puntoInicio?.categoria || 'punto de inicio'}",
       "tiempo": "${fechaHoraInicio.split('T')[1] || '09:00'}-${fechaHoraInicio.split('T')[1] || '09:30'}",
       "descripcion": "${puntoInicio?.descripcion || 'Punto de partida del recorrido'}",
@@ -171,6 +177,8 @@ JSON OBLIGATORIO:
     {
       "orden": ${i + 2},
       "nombre": "[PUNTO ${i + 2}]",
+      "lugar_fisico": "[NOMBRE_EXACTO_SIN_VERBOS]",
+      "categoria_lugar": "[CATEGORIA: museo/parque/restaurante/cerro/plaza/mercado/barrio/centro_comercial/lugar_natural/atraccion_turistica]",
       "tipo": "[TIPO]",
       "tiempo": "[HORA]",
       "descripcion": "[DESCRIPCIÓN]",
@@ -250,6 +258,15 @@ JSON OBLIGATORIO:
                 .replace(/\s+/g, ' ') // Normalizar espacios
                 .trim() || 'Punto de interés' 
               : 'Punto de interés',
+            lugar_fisico: punto.lugar_fisico ?
+              punto.lugar_fisico
+                .replace(/Centro Comercial /gi, '')
+                .replace(/Peña y Arte Flamenco /gi, '')
+                .replace(/undefined\s*/gi, '')
+                .replace(/[\u0000-\u001F\u007F-\u009F]/g, '')
+                .replace(/\s+/g, ' ')
+                .trim() || punto.nombre
+              : punto.nombre,
             descripcion: punto.descripcion ?
               punto.descripcion
                 .replace(/undefined\s*/gi, '')
@@ -258,6 +275,154 @@ JSON OBLIGATORIO:
                 .trim() || 'Descripción no disponible'
               : 'Descripción no disponible'
           }))
+          
+          // Filtrar lugares problemáticos
+          const lugaresProblematicos = [
+            'Casa Pilar', 'Peña Flamenco', 'Arte Flamenco', 'Coquinaria',
+            'Barrio El Golf y Plaza Perú', 'Ambrosía Bistro' // Restaurantes ficticios
+          ]
+          
+          // Limpiar nombres compuestos problemáticos
+          tourData.ruta = tourData.ruta.map(punto => ({
+            ...punto,
+            lugar_fisico: punto.lugar_fisico
+              ?.replace(/Barrio El Golf y Plaza Perú/gi, 'Plaza Perú')
+              ?.replace(/Coquinaria/gi, 'Mercado Central') // Fallback a lugar conocido
+          }))
+          
+          // Validar lugares con Google Places API
+          const validatePlace = async (placeName, city, cityCoords) => {
+            try {
+              if (!process.env.GOOGLE_PLACES_API_KEY) {
+                console.warn('⚠️ Google Places API key no configurada, saltando validación')
+                return true
+              }
+              
+              const query = `${placeName}, ${city}`
+              const response = await fetch(
+`https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input=${encodeURIComponent(query)}&inputtype=textquery&fields=place_id,name,business_status,geometry,types&key=${process.env.GOOGLE_PLACES_API_KEY}`
+              )
+              const data = await response.json()
+              
+              if (data.candidates && data.candidates.length > 0) {
+                // Analizar todos los candidatos y mostrar información
+                const tiposProblematicos = ['political', 'administrative_area_level_1', 'administrative_area_level_2']
+                
+                for (const [index, candidate] of data.candidates.entries()) {
+                  if (!candidate.place_id) continue
+                  
+                  // Clasificar tipo de lugar
+                  let tipoLugar = 'Lugar'
+                  if (candidate.types) {
+                    if (candidate.types.includes('route')) tipoLugar = 'Calle/Ruta'
+                    else if (candidate.types.includes('natural_feature')) tipoLugar = 'Lugar Natural'
+                    else if (candidate.types.includes('tourist_attraction')) tipoLugar = 'Atracción Turística'
+                    else if (candidate.types.includes('park')) tipoLugar = 'Parque'
+                    else if (candidate.types.includes('museum')) tipoLugar = 'Museo'
+                    else if (candidate.types.includes('restaurant')) tipoLugar = 'Restaurante'
+                    else if (candidate.types.includes('establishment')) tipoLugar = 'Establecimiento'
+                  }
+                  
+                  console.log(`📍 Candidato ${index + 1}: ${placeName} (${tipoLugar}) - Tipos: ${candidate.types?.join(', ') || 'N/A'}`)
+                }
+                
+                const place = data.candidates[0]
+                
+                // Verificar que tenga place_id y esté operativo
+                if (!place.place_id || (place.business_status && place.business_status !== 'OPERATIONAL')) {
+                  return false
+                }
+                
+                // Filtrar solo tipos realmente problemáticos (divisiones administrativas)
+                if (place.types && place.types.some(tipo => tiposProblematicos.includes(tipo))) {
+                  console.warn(`🚫 Lugar filtrado por tipo: ${placeName} - Tipos: ${place.types.join(', ')}`)
+                  return false
+                }
+                
+                console.log(`✅ Lugar seleccionado: ${placeName} (Candidato 1)`)
+                
+                // Calcular radio dinámico según tamaño de ciudad
+                const getRadioMaximo = (cityName) => {
+                  const megaciudades = ['tokyo', 'delhi', 'shanghai', 'sao paulo', 'mumbai', 'beijing', 'osaka', 'cairo', 'mexico city', 'dhaka']
+                  const metropolis = ['london', 'paris', 'new york', 'moscow', 'istanbul', 'los angeles', 'buenos aires', 'rio de janeiro', 'lima', 'bogota']
+                  const ciudadesGrandes = ['santiago', 'barcelona', 'amsterdam', 'berlin', 'madrid', 'rome', 'vienna', 'prague', 'lisbon', 'athens']
+                  
+                  const city = cityName.toLowerCase()
+                  if (megaciudades.some(mega => city.includes(mega))) return 75
+                  if (metropolis.some(metro => city.includes(metro))) return 50
+                  if (ciudadesGrandes.some(grande => city.includes(grande))) return 35
+                  return 25 // Ciudades pequeñas/medianas
+                }
+                
+                // Validar distancia desde el centro de la ciudad
+                if (place.geometry && place.geometry.location && cityCoords) {
+                  const radioMaximo = getRadioMaximo(city)
+                  const distancia = calcularDistancia(
+                    cityCoords.lat, cityCoords.lon,
+                    place.geometry.location.lat, place.geometry.location.lng
+                  )
+                  
+                  if (distancia > radioMaximo) {
+                    console.warn(`🚫 Lugar muy lejano eliminado: ${placeName} - ${distancia.toFixed(1)}km del centro (máx: ${radioMaximo}km)`)
+                    return false
+                  }
+                }
+                
+                return true
+              }
+              return false
+            } catch (error) {
+              console.warn(`Error validando lugar ${placeName}:`, error)
+              return false
+            }
+          }
+          
+          // Función para calcular distancia entre dos puntos
+          const calcularDistancia = (lat1, lon1, lat2, lon2) => {
+            const R = 6371
+            const dLat = (lat2 - lat1) * Math.PI / 180
+            const dLon = (lon2 - lon1) * Math.PI / 180
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLon/2) * Math.sin(dLon/2)
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
+            return R * c
+          }
+          
+          // Filtrar lugares problemáticos primero
+          tourData.ruta = tourData.ruta.filter(punto => {
+            const esProblematico = lugaresProblematicos.some(lugar => 
+              punto.lugar_fisico?.toLowerCase().includes(lugar.toLowerCase())
+            )
+            if (esProblematico) {
+              console.warn(`🚫 Lugar filtrado: ${punto.lugar_fisico} - En lista problemática`)
+            }
+            return !esProblematico
+          })
+          
+          // Validar cada lugar restante con Google Places API
+          const validatedRuta = []
+          for (const punto of tourData.ruta) {
+            if (punto.orden === 1) {
+              validatedRuta.push(punto)
+              continue
+            }
+            
+            const isValid = await validatePlace(
+              punto.lugar_fisico, 
+              ciudad?.city || ciudad?.name,
+              { lat: ciudad?.lat || -33.4521, lon: ciudad?.lon || -70.6536 }
+            )
+            if (isValid) {
+              validatedRuta.push(punto)
+              console.log(`✅ Lugar verificado: ${punto.lugar_fisico}`)
+            } else {
+              console.warn(`🚫 Lugar sin pin eliminado: ${punto.lugar_fisico}`)
+              console.log(`📝 Revisa los candidatos arriba para verificar si es el lugar correcto`)
+            }
+          }
+          
+          tourData.ruta = validatedRuta
         }
         console.log('Tour parseado - puntos en ruta:', tourData.ruta?.length)
         
